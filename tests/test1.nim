@@ -115,7 +115,7 @@ test "lua_call1":
   let r3 = lua.popReference()
   check r3.call((2,4),int)==2+4
 
-test "lua_rawget":
+test "lua_rawgetset":
   let lua = newLuaState()
   let L = lua.raw
   check L.dostring("""
@@ -130,3 +130,5 @@ test "lua_rawget":
   check t1.rawget(10,int)==123456
   check t1.rawget("a",int)==100500
   check t1.rawget("b",string)=="teststring"
+  t1.rawset("t1",654321)
+  check t1.rawget("t1",int)==654321

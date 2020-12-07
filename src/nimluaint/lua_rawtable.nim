@@ -19,3 +19,12 @@ proc rawget*[K](lref:LuaReference,key:K,to:typedesc):to =
     var pos = start+2
     result.fromluaraw(lua,pos,pos)
 
+proc rawset*[K,V](lref:LuaReference,key:K,value:V) =
+  lref.checkType LTABLE
+  let lua = lref.lua
+  let L = lua.raw
+  L.protectStack start:
+    lref.pushOnStack()
+    key.toluaraw lua
+    value.toluaraw lua
+    L.rawset(start+1)
