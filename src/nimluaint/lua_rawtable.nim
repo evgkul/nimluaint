@@ -11,8 +11,11 @@ proc rawget*[K](lref:LuaReference,key:K,to:typedesc):to =
   let L = lua.raw
   L.protectStack start:
     lref.pushOnStack()
-    key.toluaraw lua
-    L.rawget(start+1)
+    when key is SomeInteger:
+      L.rawgeti(start+1,key.cint)
+    else:
+      key.toluaraw lua
+      L.rawget(start+1)
     var pos = start+2
     result.fromluaraw(lua,pos,pos)
 

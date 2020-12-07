@@ -120,13 +120,13 @@ test "lua_rawget":
   let L = lua.raw
   check L.dostring("""
   return {
-    123456,
+    [10]=123456,
     a=100500,
     b="teststring"
   }
   """)==0
   let t1 = lua.popReference()
   check t1.ltype==LTABLE
-  check t1.rawget(1,int)==123456
+  check t1.rawget(10,int)==123456
   check t1.rawget("a",int)==100500
   check t1.rawget("b",string)=="teststring"
