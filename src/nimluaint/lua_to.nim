@@ -6,6 +6,10 @@ import macros
 
 proc toluaraw*(value:int,lua:LuaState) =
   lua.raw.pushinteger(value)
+proc toluaraw*(value:string,lua:LuaState) =
+  discard lua.raw.pushstring(value)
+proc toluaraw*(value:float,lua:LuaState) =
+  lua.raw.pushnumber(value.lua_Number)
 
 proc toluaraw_multi*[T:tuple](value:T,lua:LuaState):cint
 template toluaraw_multi*(value:not tuple and not LuaMultivalue,lua:LuaState):cint =

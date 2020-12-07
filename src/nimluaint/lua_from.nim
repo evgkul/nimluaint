@@ -8,8 +8,9 @@ template implementFromluaraw*(ty:typedesc,code:untyped) =
     to=code
     pos+=1
 
-int.implementFromluaraw L.tonumber(pos).int
+int.implementFromluaraw L.tointeger(pos).int
 string.implementFromluaraw L.tostring(pos)
+float.implementFromluaraw L.tonumber(pos).float
 
 proc fromluaraw*[T](to:var LuaMultivalue[T],lua:LuaState,pos:var cint,max:cint) =
   type s = seq[T]
