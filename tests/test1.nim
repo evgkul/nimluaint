@@ -77,4 +77,14 @@ test "lua_fromluaraw_tuple2":
   type TestTuple = tuple[x,y,z:int]
   let test1 = lua.fromluaraw_wrapped((TestTuple,TestTuple),1,2)
   check test1==((1,2,3),(4,5,6))
+
+test "lua_reference1":
+  let lua = newLuaState()
+  let L = lua.raw
+  check L.dostring("return 'teststring',100500")==0
+  let r1 = lua.popReference()
+  let r2 = lua.popReference()
+  check r1.to(int)==100500
+  check r1.to(string)=="100500"
+  check r2.to(string)=="teststring"
   
