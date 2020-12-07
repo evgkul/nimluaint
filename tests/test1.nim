@@ -97,4 +97,7 @@ test "lua_reference1":
   check L.gettop()==2
   check r3.to(string)=="teststring"
   check r4.to(int)==100500
-  
+
+test "lua_call1":
+  let lua = newLuaState()
+  let L = lua.raw

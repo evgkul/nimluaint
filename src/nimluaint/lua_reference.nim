@@ -15,6 +15,7 @@ proc `=destroy`(lref: var LuaReferenceInner)=
 type LuaReference* = ref LuaReferenceInner
 LuaReference.exportReadonly lua
 LuaReference.exportReadonly rawref
+LuaReference.exportReadonly ltype
 
 proc pushOnStack*(lref:LuaReference) =
   lref.lua.raw.rawgeti(LUA_REGISTRYINDEX,lref.rawref)
