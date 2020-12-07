@@ -1,11 +1,6 @@
-# This is just an example to get you started. A typical library package
-# exports the main API in this file. Note that you cannot rename this file
-# but you can remove it if you wish.
-
-import nimluaint/[lua_api,lua_builder]
+import nimluaint/[lua_api,lua_builder,lua_state]
+import macros
 
 build_lua()
 
-proc add*(x, y: int): int =
-  ## Adds two files together.
-  return x + y
+export lua_state
