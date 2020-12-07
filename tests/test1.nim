@@ -77,7 +77,7 @@ test "lua_fromluaraw3":
   type TestTuple = tuple[x,y,z:int]
   let test1 = lua.fromluaraw_wrapped((TestTuple,TestTuple),1,2)
   check test1==((1,2,3),(4,5,6))
-  let test2:seq[int] = lua.fromluaraw_wrapped(LuaVarargs[int],1,6)
+  let test2:seq[int] = lua.fromluaraw_wrapped(LuaMultivalue[int],1,6)
   check test2 == @[1,2,3,4,5,6]
   
 
@@ -106,3 +106,7 @@ test "lua_call1":
   check r1.ltype==LFUNCTION
   let test1 = r1.call((int,int,int,int,int,int))
   check test1==(1,2,3,4,5,6)
+  let r2 = r1.call(LuaReference)
+  check r2.ltype==LNUMBER
+  expect LuaCallError:
+    discard r2.call(int)

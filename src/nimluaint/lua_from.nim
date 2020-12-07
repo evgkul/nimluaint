@@ -11,7 +11,7 @@ template implementFromluaraw*(ty:typedesc,code:untyped) =
 int.implementFromluaraw L.tonumber(pos).int
 string.implementFromluaraw L.tostring(pos)
 
-proc fromluaraw*[T](to:var LuaVarargs[T],lua:LuaState,pos:var cint,max:cint) =
+proc fromluaraw*[T](to:var LuaMultivalue[T],lua:LuaState,pos:var cint,max:cint) =
   type s = seq[T]
   let l = max-pos+1
   to.s.setLen(l)
