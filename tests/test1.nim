@@ -56,3 +56,15 @@ test "lua_fromluaraw1":
   check test2=="100500"
   let test3 = lua.fromluaraw_wrapped(string,2,2)
   check test3=="teststring"
+test "lua_fromluaraw_tuple1":
+  echo "Starting Lua"
+  var lua = newLuaState()
+  let L = lua.raw
+  check L.dostring("return 100500,'teststring'")==0
+  check L.gettop()==2
+  check L.tonumber(1)==100500
+  check L.tostring(2)=="teststring"
+  let test1 = lua.fromluaraw_wrapped((int,string),1,2)
+  check test1==(100500,"teststring")
+  let test2 = lua.fromluaraw_wrapped((string,string),1,2)
+  check test2==("100500","teststring")
