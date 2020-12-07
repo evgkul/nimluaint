@@ -101,12 +101,12 @@ test "lua_reference1":
 test "lua_call1":
   let lua = newLuaState()
   let L = lua.raw
-  check L.loadstring("return 1,2,3,4,5,6")==0
+  check L.loadstring("local a={...}; return 1,2,3,4,5,6*a[1]")==0
   let r1 = lua.popReference()
   check r1.ltype==LFUNCTION
-  let test1 = r1.call((int,int,int,int,int,int))
-  check test1==(1,2,3,4,5,6)
-  let r2 = r1.call(LuaReference)
+  let test1 = r1.call(2,(int,int,int,int,int,int))
+  check test1==(1,2,3,4,5,6*2)
+  let r2 = r1.call(2,LuaReference)
   check r2.ltype==LNUMBER
   expect LuaCallError:
-    discard r2.call(int)
+    discard r2.call(1,int)

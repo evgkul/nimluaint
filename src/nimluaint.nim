@@ -1,4 +1,4 @@
-import nimluaint/[lua_api,lua_builder,lua_state,lua_reference,lua_call]
+import nimluaint/[lua_api,lua_builder,lua_state,lua_reference,lua_call,lua_to]
 import macros
 
 build_lua()
