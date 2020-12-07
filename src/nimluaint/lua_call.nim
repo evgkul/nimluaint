@@ -13,7 +13,7 @@ proc call*[T](lref:LuaReference,args:T,rettype:typedesc):rettype =
   let L = lua.raw
   L.protectStack start:
     lref.pushOnStack()
-    let argscount = args.try_toluaraw_multi lua
+    let argscount = args.toluaraw_multi lua
     if L.pcall(argscount,-1,0)!=0:
       let errmsg = L.tostring(start+1)
       raise newException(LuaCallError,errmsg)

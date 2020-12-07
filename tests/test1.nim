@@ -110,3 +110,7 @@ test "lua_call1":
   check r2.ltype==LNUMBER
   expect LuaCallError:
     discard r2.call(1,int)
+  check L.gettop()==0
+  check L.loadstring("local a={...}; return a[1]+a[2]")==0
+  let r3 = lua.popReference()
+  check r3.call((2,4),int)==2+4
