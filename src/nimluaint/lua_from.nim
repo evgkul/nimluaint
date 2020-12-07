@@ -11,6 +11,14 @@ template implementFromluaraw*(ty:typedesc,code:untyped) =
 int.implementFromluaraw L.tonumber(pos).int
 string.implementFromluaraw L.tostring(pos)
 
+proc fromluaraw*[T](to:var LuaVarargs[T],lua:LuaState,pos:var cint,max:cint) =
+  type s = seq[T]
+  let l = max-pos+1
+  to.s.setLen(l)
+  #echo "L ",l
+  for i in 0..l-1:
+    to.s[i].fromluaraw(lua,pos,max)
+
 
 macro fromluaraw_tuple_impl*(to:var tuple, lua:LuaState, pos:var cint,max:cint) =
   result = newStmtList()

@@ -56,7 +56,7 @@ test "lua_fromluaraw1":
   check test2=="100500"
   let test3 = lua.fromluaraw_wrapped(string,2,2)
   check test3=="teststring"
-test "lua_fromluaraw_tuple1":
+test "lua_fromluaraw2":
   echo "Starting Lua"
   var lua = newLuaState()
   let L = lua.raw
@@ -68,7 +68,7 @@ test "lua_fromluaraw_tuple1":
   check test1==(100500,"teststring")
   let test2 = lua.fromluaraw_wrapped((string,string),1,2)
   check test2==("100500","teststring")
-test "lua_fromluaraw_tuple2":
+test "lua_fromluaraw3":
   echo "Starting Lua"
   var lua = newLuaState()
   let L = lua.raw
@@ -77,6 +77,9 @@ test "lua_fromluaraw_tuple2":
   type TestTuple = tuple[x,y,z:int]
   let test1 = lua.fromluaraw_wrapped((TestTuple,TestTuple),1,2)
   check test1==((1,2,3),(4,5,6))
+  let test2:seq[int] = lua.fromluaraw_wrapped(LuaVarargs[int],1,6)
+  check test2 == @[1,2,3,4,5,6]
+  
 
 test "lua_reference1":
   let lua = newLuaState()

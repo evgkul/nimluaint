@@ -2,6 +2,10 @@ import lua_api
 import utils
 import logging
 
+type LuaVarargs*[T] = distinct seq[T]
+converter toseq*[T](vargs:LuaVarargs[T]):seq[T] =
+  (seq[T])(vargs)
+
 type LuaStateInnerObj = object
   raw: PState
   autodestroy*: bool
