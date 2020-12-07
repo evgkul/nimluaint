@@ -9,6 +9,7 @@ import unittest
 import logging
 import nimluaint
 import nimluaint/lua_api
+import nimluaint/lua_from
 #test "can add":
 #  check add(5, 5) == 10
 
@@ -41,3 +42,17 @@ test "lua_state1":
   check L.gettop()==1
   check L.tonumber(1)==100500
   check L.tostring(1)=="100500"
+test "lua_fromluaraw1":
+  echo "Starting Lua"
+  var lua = newLuaState()
+  let L = lua.raw
+  check L.dostring("return 100500,'teststring'")==0
+  check L.gettop()==2
+  check L.tonumber(1)==100500
+  check L.tostring(2)=="teststring"
+  let test1 = lua.fromluaraw_wrapped(int,1,1)
+  check test1==100500
+  let test2 = lua.fromluaraw_wrapped(string,1,1)
+  check test2=="100500"
+  let test3 = lua.fromluaraw_wrapped(string,2,2)
+  check test3=="teststring"
