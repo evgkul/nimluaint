@@ -104,3 +104,5 @@ test "lua_call1":
   check L.loadstring("return 1,2,3,4,5,6")==0
   let r1 = lua.popReference()
   check r1.ltype==LFUNCTION
+  let test1 = r1.call((int,int,int,int,int,int))
+  check test1==(1,2,3,4,5,6)
