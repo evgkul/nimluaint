@@ -10,6 +10,9 @@ proc toluaraw*(value:string,lua:LuaState) =
   discard lua.raw.pushstring(value)
 proc toluaraw*(value:float,lua:LuaState) =
   lua.raw.pushnumber(value.lua_Number)
+proc toluaraw*(value:LuaReference,lua:LuaState) =
+  assert value.lua.inner==lua.inner
+  value.pushOnStack()
 
 proc toluaraw_multi*[T:tuple](value:T,lua:LuaState):cint
 template toluaraw_multi*(value:not tuple and not LuaMultivalue,lua:LuaState):cint =
