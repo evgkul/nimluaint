@@ -18,36 +18,6 @@ const
 #{.deadCodeElim: on.}
 #when defined(useLuaJIT):
 #  {.warning: "Lua JIT does not support Lua 5.3 at this time."}
-const SHARED_LIB_NAME* {.strdefine.} = "none"
-
-when SHARED_LIB_NAME != "none":
-  const LIB_NAME* = SHARED_LIB_NAME
-elif not defined(useLuaJIT):
-  when defined(MACOSX):
-    const
-      LIB_NAME* = "liblua53.dylib"
-  elif defined(FREEBSD):
-    const
-      LIB_NAME* = "liblua-5.3.so"
-  elif defined(UNIX):
-    const
-      LIB_NAME* = "liblua53.so"
-  else:
-    const
-      LIB_NAME* = "lua53.dll"
-else:
-  when defined(MACOSX):
-    const
-      LIB_NAME* = "libluajit.dylib"
-  elif defined(FREEBSD):
-    const
-      LIB_NAME* = "libluajit-5.1.so"
-  elif defined(UNIX):
-    const
-      LIB_NAME* = "libluajit.so"
-  else:
-    const
-      LIB_NAME* = "luajit.dll"
 
 const
   # mark for precompiled code ('<esc>Lua')
@@ -137,7 +107,7 @@ type
   lua_Number* = float64  # type of numbers in Lua
   lua_Integer* = int64    # ptrdiff_t \ type for integer functions
 
-{.push callconv: cdecl, dynlib: LIB_NAME .} # importc: "lua_$1"  was not allowed?
+{.push callconv: cdecl .} # importc: "lua_$1"  was not allowed?
 {.pragma: ilua, importc: "lua_$1".} # lua.h
 {.pragma: iluaLIB, importc: "lua$1".} # lualib.h
 {.pragma: iluaL, importc: "luaL_$1".} # lauxlib.h
