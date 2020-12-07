@@ -35,6 +35,10 @@ proc popReference*(lua:LuaState):LuaReference =
   let rawref = lua.raw.luaref(LUA_REGISTRYINDEX)
   return newLuaReference(lua,rawref,ltype,true)
 
+template checkType*(lref:LuaReference,expected:LUA_TYPE) =
+  if lref.ltype!=expected:
+    luaInvalidType(expected,lref.ltype)
+
 LuaReference.implementFromluaraw:
   L.pushvalue pos
   lua.popReference()

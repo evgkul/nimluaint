@@ -1,6 +1,11 @@
 import lua_api
 import utils
 import logging
+import strformat
+
+type LuaInvalidType* = object of CatchableError
+template luaInvalidType*(expected:LUA_TYPE,got:LUA_TYPE) =
+  raise newException(LuaInvalidType,"Invalid type: expected " & $expected & ", got " & $got)
 
 type LuaMultivalue*[T] = distinct seq[T]
 converter toseq*[T](vargs:LuaMultivalue[T]):seq[T] =

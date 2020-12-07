@@ -10,3 +10,4 @@ template protectStack*(L:PState,code:untyped) = L.protectStack(stack_top,code)
 
 template exportReadonly*(ty:typedesc,name:untyped) =
   template name*(obj:ty):auto = obj.name
+  

@@ -114,3 +114,19 @@ test "lua_call1":
   check L.loadstring("local a={...}; return a[1]+a[2]")==0
   let r3 = lua.popReference()
   check r3.call((2,4),int)==2+4
+
+test "lua_rawget":
+  let lua = newLuaState()
+  let L = lua.raw
+  check L.dostring("""
+  return {
+    123456,
+    a=100500,
+    b="teststring"
+  }
+  """)==0
+  let t1 = lua.popReference()
+  check t1.ltype==LTABLE
+  check t1.rawget(1,int)==123456
+  check t1.rawget("a",int)==100500
+  check t1.rawget("b",string)=="teststring"
