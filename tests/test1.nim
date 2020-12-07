@@ -87,4 +87,11 @@ test "lua_reference1":
   check r1.to(int)==100500
   check r1.to(string)=="100500"
   check r2.to(string)=="teststring"
+  check L.gettop()==0
+  check L.dostring("return 'teststring',100500")==0
+  let r3 = lua.fromluaraw_wrapped(LuaReference,1,1)
+  let r4 = lua.fromluaraw_wrapped(LuaReference,2,2)
+  check L.gettop()==2
+  check r3.to(string)=="teststring"
+  check r4.to(int)==100500
   

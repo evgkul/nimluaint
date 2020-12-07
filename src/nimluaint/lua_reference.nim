@@ -33,3 +33,7 @@ proc popReference*(lua:LuaState):LuaReference =
   let ltype = lua.raw.luatype(-1).LUA_TYPE
   let rawref = lua.raw.luaref(LUA_REGISTRYINDEX)
   return newLuaReference(lua,rawref,ltype,true)
+
+LuaReference.implementFromluaraw:
+  L.pushvalue pos
+  lua.popReference()
