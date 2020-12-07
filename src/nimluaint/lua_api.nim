@@ -355,7 +355,6 @@ const
 
 # Functions to be called by the debugger in specific events
 type
-  PDebug* = ptr lua.TDebug
   TDebug* {.pure, final.} = object
     event*: cint
     name*: cstring        # (n)
@@ -371,6 +370,7 @@ type
     istailcall*: char     # (t)
     short_src*: array[LUA_IDSIZE, char] # (S) \ # private part
     i_ci: pointer#ptr CallInfo   # active function
+  PDebug* = ptr TDebug
 
 
 type

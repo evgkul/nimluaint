@@ -2,6 +2,10 @@
 # exports the main API in this file. Note that you cannot rename this file
 # but you can remove it if you wish.
 
+import nimluaint/[lua_api,lua_builder]
+
+build_lua()
+
 proc add*(x, y: int): int =
   ## Adds two files together.
   return x + y
