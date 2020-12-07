@@ -6,3 +6,4 @@ build_lua()
 export lua_state
 export lua_reference
 export lua_call
+export LUA_TYPE

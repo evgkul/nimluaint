@@ -101,3 +101,6 @@ test "lua_reference1":
 test "lua_call1":
   let lua = newLuaState()
   let L = lua.raw
+  check L.loadstring("return 1,2,3,4,5,6")==0
+  let r1 = lua.popReference()
+  check r1.ltype==LFUNCTION
