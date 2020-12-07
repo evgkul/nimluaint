@@ -132,3 +132,5 @@ test "lua_rawgetset":
   check t1.rawget("b",string)=="teststring"
   t1.rawset("t1",654321)
   check t1.rawget("t1",int)==654321
+  t1.rawset(9,"testvalue")
+  check t1.rawget(9,string)=="testvalue"

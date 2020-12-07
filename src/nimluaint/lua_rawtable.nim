@@ -25,6 +25,10 @@ proc rawset*[K,V](lref:LuaReference,key:K,value:V) =
   let L = lua.raw
   L.protectStack start:
     lref.pushOnStack()
-    key.toluaraw lua
-    value.toluaraw lua
-    L.rawset(start+1)
+    when key is SomeInteger:
+      value.toluaraw lua
+      L.rawseti(start+1,key.cint)
+    else:
+      key.toluaraw lua
+      value.toluaraw lua
+      L.rawset(start+1)
