@@ -68,3 +68,13 @@ test "lua_fromluaraw_tuple1":
   check test1==(100500,"teststring")
   let test2 = lua.fromluaraw_wrapped((string,string),1,2)
   check test2==("100500","teststring")
+test "lua_fromluaraw_tuple2":
+  echo "Starting Lua"
+  var lua = newLuaState()
+  let L = lua.raw
+  check L.dostring("return 1,2,3,4,5,6")==0
+  check L.gettop()==6
+  type TestTuple = tuple[x,y,z:int]
+  let test1 = lua.fromluaraw_wrapped((TestTuple,TestTuple),1,2)
+  check test1==((1,2,3),(4,5,6))
+  
