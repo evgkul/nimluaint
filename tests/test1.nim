@@ -151,5 +151,8 @@ test "lua_userdata1":
   a[0] = false
   type TestUserdata = object
     collref: ref array[1,bool]
+  proc `=destroy`(obj: var TestUserdata) =
+    debug "Destroying TestUserdata"
+    obj.collref[0] = true
   let fn1 = lua.load("print('UDATA', ({...})[1] )")
   discard fn1.call(TestUserdata(collref:a),int)
