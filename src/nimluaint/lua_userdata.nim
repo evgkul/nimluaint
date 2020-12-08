@@ -6,6 +6,7 @@ import lua_reference
 import lua_rawtable
 import utils
 import tables
+
 proc pushUserdataMetatable*(lua:LuaState,ty:typedesc) =
   let id = getTypeID ty
   let L = lua.raw
@@ -16,6 +17,7 @@ proc pushUserdataMetatable*(lua:LuaState,ty:typedesc) =
     L.newtable()
     L.pushvalue(-1)
     let meta = lua.popReference()
+    ty.implementUserdata(lua,meta)
     meta.autodestroy = false
     let metaid = meta.rawref
     lua.inner.typemetatables[id]=metaid

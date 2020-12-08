@@ -143,17 +143,22 @@ test "lua_load":
   expect LuaLoadError:
     let fn2 = lua.load("local 1 = 2","test2")
 
+type TestUserdata = object
+  collref: ref array[1,bool]
+proc `=destroy`(obj: var TestUserdata) =
+  debug "Destroying TestUserdata"
+  obj.collref[0] = true
+proc implementUserdata*(t:type TestUserdata,lua:LuaState,meta:LuaReference) =
+  echo "IMPLEMENT"
+
 test "lua_userdata1":
   let lua = newLuaState()
   let L = lua.raw
   var a:ref array[1,bool]
   new a
   a[0] = false
-  type TestUserdata = object
-    collref: ref array[1,bool]
-  proc `=destroy`(obj: var TestUserdata) =
-    debug "Destroying TestUserdata"
-    obj.collref[0] = true
+  
   let fn1 = lua.load("print('UDATA', ({...})[1] )")
   discard fn1.call(TestUserdata(collref:a),int)
   L.dostring("collectgarbage()")
+  check a[0] == true
