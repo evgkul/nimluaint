@@ -11,6 +11,7 @@ type LuaReferenceInner = object
 proc `=destroy`(lref: var LuaReferenceInner)=
   if lref.autodestroy:
     lref.lua.raw.unref(LUA_REGISTRYINDEX,lref.rawref)
+  reset lref.lua
 
 type LuaReference* = ref LuaReferenceInner
 LuaReference.exportReadonly lua
