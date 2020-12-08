@@ -165,5 +165,5 @@ test "lua_userdata1":
 test "lua_closure1":
   let lua = newLuaState()
   let L = lua.raw
-  let tc = lua.implementClosure proc(a,b,c:int,d:float):string = "HELLOWORLD"
+  let tc = lua.implementClosure proc(a,b,c:int,d:float):string = return "HELLOWORLD"
   discard tc.call(1,(int))

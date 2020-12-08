@@ -24,7 +24,37 @@ proc pushclosure(lua:LuaState,rawclosure:TCFunction,inner:InnerClosure):LuaRefer
 proc force_keep[T](val:T) {.inline.} =
   ##Forces a value to be not removed by nim compiler
   {.emit: "/* Forcing to keep in code `val` */".}
-macro implementClosure*(lua:LuaState,closure: proc):LuaReference =
+
+proc rewriteReturn(node:var NimNode,rename_to:NimNode):bool {.compiletime,discardable.} =
+  if node.kind==nnkReturnStmt:
+    result = true
+    let copy = node
+    node = newCall(rename_to)
+    #echo "TO: ",to.treeRepr
+    for c in copy:
+      node.add c
+  for i in 0..node.len-1:
+    var c = node[i]
+    if rewriteReturn(c,rename_to):
+      node[i] = c
+
+template buildInnerClosure*(body:untyped,interceptReturn:untyped):untyped =
+  #bind rewriteReturn
+  try:
+    var lua_res:string
+    template result():untyped = lua_res
+    block lua_code:
+      template interceptReturn(a:untyped) =
+        lua_res = a
+        break lua_code
+      body
+  except Exception as e:
+    echo "ERROR"
+    return -2
+
+macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
+  closure.expectKind nnkLambda
+  let i_renameto = genSym(nskTemplate,"interceptReturn")
   let pushc = bindSym "pushclosure"
   let pstate = bindSym "PState"
   #let ty = closure.getTypeImpl()
@@ -49,6 +79,8 @@ macro implementClosure*(lua:LuaState,closure: proc):LuaReference =
   echo "PARAMS: ",params.treeRepr
   let ret = params[0]
   let args = params[1..^1]
+  var body = closure.body
+  rewriteReturn(body,i_renameto)
   echo "RET: ",ret.treeRepr
   let cname = &"cfunction_{pincr}"
   let inner_cname = &"inner_{cname}"
@@ -62,9 +94,10 @@ macro implementClosure*(lua:LuaState,closure: proc):LuaReference =
   }""".replace("CFUNC",cname).replace("PTRINDEX",$ptrindex).replace("INNERFUNC",inner_cname)
   let cname_ident =ident cname
   let inner_proc = ident inner_cname
+
   res.add quote do:
     proc `inner_proc`():cint {.closure, exportc: `inner_cname`,raises:[].} =
-      echo "HELLO FROM NIM"
+      buildInnerClosure(`body`,`i_renameto`)
     proc `cname_ident`(L:`pstate`):cint {.cdecl, importc, codegenDecl: `cdecl`.}
     `pushc`(`lua`,`cname_ident`,`inner_proc`)
   return quote do:
