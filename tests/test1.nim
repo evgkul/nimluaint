@@ -162,3 +162,8 @@ test "lua_userdata1":
   discard fn1.call(TestUserdata(collref:a),int)
   L.dostring("collectgarbage()")
   check a[0] == true
+test "lua_closure1":
+  let lua = newLuaState()
+  let L = lua.raw
+  let tc = lua.implementClosure proc(a,b,c:int,d:float):string = "HELLOWORLD"
+  discard tc.call(1,(int))
