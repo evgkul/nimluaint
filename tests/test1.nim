@@ -156,3 +156,4 @@ test "lua_userdata1":
     obj.collref[0] = true
   let fn1 = lua.load("print('UDATA', ({...})[1] )")
   discard fn1.call(TestUserdata(collref:a),int)
+  L.dostring("collectgarbage()")

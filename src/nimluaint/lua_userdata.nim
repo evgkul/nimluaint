@@ -21,7 +21,10 @@ proc pushUserdataMetatable*(lua:LuaState,ty:typedesc) =
     lua.inner.typemetatables[id]=metaid
     let metapos = L.gettop()
     proc destroy_udata(L:PState):cint {.cdecl.} =
-      echo "DESTROYING ",$ty
+      #echo "METATABLE: DESTROYING ",$ty
+      let udata = L.topointer(-1)
+      let p = cast[ptr ty](udata)
+      reset p[]
       return 0
     toluaraw("__gc",lua)
     L.pushcfunction destroy_udata
