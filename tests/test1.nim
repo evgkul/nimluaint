@@ -134,3 +134,11 @@ test "lua_rawgetset":
   check t1.rawget("t1",int)==654321
   t1.rawset(9,"testvalue")
   check t1.rawget(9,string)=="testvalue"
+
+test "lua_load":
+  let lua = newLuaState()
+  let L = lua.raw
+  let fn1 = lua.load("return 100500","test1")
+  check fn1.call(1,int)==100500
+  expect LuaLoadError:
+    let fn2 = lua.load("local 1 = 2","test2")

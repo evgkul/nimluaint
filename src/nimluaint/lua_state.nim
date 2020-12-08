@@ -4,6 +4,7 @@ import logging
 import strformat
 
 type LuaInvalidType* = object of CatchableError
+type LuaLoadError* = object of CatchableError
 template luaInvalidType*(expected:LUA_TYPE,got:LUA_TYPE) =
   raise newException(LuaInvalidType,"Invalid type: expected " & $expected & ", got " & $got)
 
