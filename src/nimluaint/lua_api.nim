@@ -201,7 +201,12 @@ proc rawget*(L: PState; idx: cint) {.ilua.}
 proc rawgeti*(L: PState; idx: cint; n: cint) {.ilua.}
 proc rawgetp*(L: PState; idx: cint; p: pointer) {.ilua.}
 proc createtable*(L: PState; narr: cint; nrec: cint) {.ilua.}
-proc newuserdata*(L: PState; sz: csize_t): pointer {.ilua.}
+when false:
+  proc newuserdata*(L: PState; sz: csize_t): pointer {.ilua.}
+else:
+  proc newuserdatauv*(L: PState; sz: csize_t, nuvalue: cint): pointer {.ilua.}
+  template newuserdata*(L:PState; sz:csize_t): pointer =
+    newuserdatauv(L,sz,1)
 proc getmetatable*(L: PState; idx: cint): cint {.ilua.}
 proc getuservalue*(L: PState; idx: cint) {.ilua.}
 

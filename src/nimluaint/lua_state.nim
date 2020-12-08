@@ -2,6 +2,7 @@ import lua_api
 import utils
 import logging
 import strformat
+import tables
 
 type LuaInvalidType* = object of CatchableError
 type LuaLoadError* = object of CatchableError
@@ -15,6 +16,7 @@ converter toseq*[T](vargs:LuaMultivalue[T]):seq[T] =
 type LuaStateInnerObj = object
   raw: PState
   autodestroy*: bool
+  typemetatables*: Table[pointer,cint]
 
 proc `=destroy`(obj: var LuaStateInnerObj) =
   if obj.autodestroy:
@@ -32,6 +34,8 @@ LuaState.exportReadonly inner
 
 proc newLuaState*(raw:PState,autodestroy:bool=false):LuaState =
   return LuaState(raw:raw,inner:LuaStateInner(raw:raw,autodestroy:autodestroy))
-proc newLuaState*():LuaState =
+proc newLuaState*(openlibs:bool=true):LuaState =
   let L = newState()
+  if openlibs:
+    L.openlibs()
   return newLuaState(L,true)

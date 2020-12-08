@@ -1,5 +1,11 @@
 import lua_api
 
+type TypeID* = pointer
+
+proc getTypeID*(t:typedesc):TypeID =
+  var typeid {.global.} = $t
+  return typeid.addr.pointer
+
 template protectStack*(L:PState,stack_top:untyped,code:untyped) =
   let stack_top = L.gettop()
   try:

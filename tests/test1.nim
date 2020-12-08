@@ -142,3 +142,14 @@ test "lua_load":
   check fn1.call(1,int)==100500
   expect LuaLoadError:
     let fn2 = lua.load("local 1 = 2","test2")
+
+test "lua_userdata1":
+  let lua = newLuaState()
+  let L = lua.raw
+  var a:ref array[1,bool]
+  new a
+  a[0] = false
+  type TestUserdata = object
+    collref: ref array[1,bool]
+  let fn1 = lua.load("print('UDATA', ({...})[1] )")
+  discard fn1.call(TestUserdata(collref:a),int)
