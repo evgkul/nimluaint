@@ -14,12 +14,14 @@ proc implementUserdata*(t:type NimClosureWrapper,lua:LuaState,meta:LuaReference)
   discard nil
 
 proc pushclosure(lua:LuaState,rawclosure:TCFunction,inner:InnerClosure):LuaReference =
+  echo "PUSHING"
   let L = lua.raw
   let wrapper = NimClosureWrapper(inner:inner)
   let env = inner.rawEnv
   GC_ref wrapper
   L.pushlightuserdata env
   L.pushcclosure(rawclosure,1)
+  echo "PUSHED"
   return lua.popReference()
 proc force_keep[T](val:T) {.inline.} =
   ##Forces a value to be not removed by nim compiler
@@ -29,7 +31,7 @@ proc rewriteReturn(node:var NimNode,rename_to:NimNode):bool {.compiletime,discar
   if node.kind==nnkReturnStmt:
     result = true
     let copy = node
-    node = newCall(rename_to)
+    node = newCall rename_to
     #echo "TO: ",to.treeRepr
     for c in copy:
       node.add c
@@ -38,23 +40,27 @@ proc rewriteReturn(node:var NimNode,rename_to:NimNode):bool {.compiletime,discar
     if rewriteReturn(c,rename_to):
       node[i] = c
 
-template buildInnerClosure*(body:untyped,interceptReturn:untyped):untyped =
+template buildInnerClosure*(lua:LuaState,body:untyped,interceptReturn:untyped,rettype:typedesc):untyped =
   #bind rewriteReturn
   try:
-    var lua_res:string
-    template result():untyped = lua_res
+    var lua_res:rettype
     block lua_code:
+      template result():untyped = lua_res
       template interceptReturn(a:untyped) =
         lua_res = a
         break lua_code
-      body
+      when compiles(lua_res = body):
+        lua_res = body
+      else:
+        body
+      return 0
   except Exception as e:
     echo "ERROR"
     return -2
 
 macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
   closure.expectKind nnkLambda
-  let i_renameto = genSym(nskTemplate,"interceptReturn")
+  let i_renameto = ident "interceptReturn"
   let pushc = bindSym "pushclosure"
   let pstate = bindSym "PState"
   #let ty = closure.getTypeImpl()
@@ -94,10 +100,10 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
   }""".replace("CFUNC",cname).replace("PTRINDEX",$ptrindex).replace("INNERFUNC",inner_cname)
   let cname_ident =ident cname
   let inner_proc = ident inner_cname
-
+  
   res.add quote do:
     proc `inner_proc`():cint {.closure, exportc: `inner_cname`,raises:[].} =
-      buildInnerClosure(`body`,`i_renameto`)
+      buildInnerClosure(`lua`,`body`,`i_renameto`,`ret`)
     proc `cname_ident`(L:`pstate`):cint {.cdecl, importc, codegenDecl: `cdecl`.}
     `pushc`(`lua`,`cname_ident`,`inner_proc`)
   return quote do:
