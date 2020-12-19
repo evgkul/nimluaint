@@ -172,4 +172,11 @@ test "lua_closure1":
   let tc2 = lua.implementClosure proc():string = raise newException(Exception,"TestException")
   expect LuaCallError:
     discard tc2.call((1),string)
+  var t = 0
+  let tc3 = lua.implementClosure proc(val:int) =
+    t = val
+    return
+    t = 3
+  discard tc3.call(2,int)
+  check t==2
   #discard tc.call(1,(int))

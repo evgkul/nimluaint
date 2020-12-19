@@ -36,7 +36,8 @@ proc rewriteReturn(node:var NimNode,rename_to:NimNode):bool {.compiletime,discar
     node = newCall rename_to
     #echo "TO: ",to.treeRepr
     for c in copy:
-      node.add c
+      if c.kind!=nnkEmpty:
+        node.add c
   for i in 0..node.len-1:
     var c = node[i]
     if rewriteReturn(c,rename_to):
@@ -108,8 +109,15 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
       args_bindings.add quote do:
         template `def`():untyped =
           `i_lua_args`.`def`
-          
+  
+  let rettype = if ret.kind == nnkEmpty:
+    quote do:
+      void
+  else:
+    ret
+
   res.add quote do:
+    type RetType = `rettype`
     proc `inner_proc`():cint {.closure, exportc: `inner_cname`,raises:[].} =
       let lua {.inject.} = `lua`
       let L = lua.raw
@@ -118,18 +126,28 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
         var lua_pos = 1.cint
         fromluaraw(`i_lua_args`,lua,lua_pos,`i_gettop`(L))
         `args_bindings`
-        var lua_res:`ret` = default `ret`
+        when RetType is not void:
+          var lua_res:RetType = default RetType
         block lua_code:
-          template result():untyped = lua_res
-          template interceptReturn(a:untyped) =
-            lua_res = a
-            break lua_code
+          when RetType is not void:
+            template result():untyped = lua_res
+            template interceptReturn(a:untyped) =
+              lua_res = a
+              break lua_code
+          else:
+            template interceptReturn(a:untyped) =
+              {.error: "This proc's return type is void!".}
+            template interceptReturn() =
+              break lua_code
           when compiles(lua_res = `body`):
             lua_res = `body`
           else:
             `body`
-        toluaraw(lua_res,lua)
-        return 1
+        when RetType is not void:
+          toluaraw(lua_res,lua)
+          return 1
+        else:
+          return 0
       except Exception as e:
         #echo "ERROR"
         var errmsg = ""
