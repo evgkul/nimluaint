@@ -6,17 +6,22 @@ import tables
 
 type LuaInvalidType* = object of CatchableError
 type LuaLoadError* = object of CatchableError
-template luaInvalidType*(expected:LUA_TYPE,got:LUA_TYPE) =
+template luaInvalidType*(expected:LUA_TYPE|string,got:LUA_TYPE|string) =
   raise newException(LuaInvalidType,"Invalid type: expected " & $expected & ", got " & $got)
 
 type LuaMultivalue*[T] = distinct seq[T]
 converter toseq*[T](vargs:LuaMultivalue[T]):seq[T] =
   (seq[T])(vargs)
 
+type LuaUserdataInfo* = tuple[
+  luaref:cint,
+  metaptr:pointer
+]
+
 type LuaStateInnerObj = object
   raw: PState
   autodestroy*: bool
-  typemetatables*: Table[pointer,cint]
+  typemetatables*: Table[TypeID,LuaUserdataInfo]
 
 proc `=destroy`(obj: var LuaStateInnerObj) =
   if obj.autodestroy:

@@ -150,7 +150,8 @@ type TestUserdata = object
 proc `=destroy`(obj: var TestUserdata) =
   debug "Destroying TestUserdata"
   obj.collref[0] = true
-proc implementUserdata*(t:type TestUserdata,lua:LuaState,meta:LuaReference) =
+proc implementUserdata*(t:type TestUserdata,lua:LuaState,meta:LuaMetatable) =
+  meta.setIndex("test",1)
   echo "IMPLEMENT"
 
 test "lua_userdata1":
@@ -182,3 +183,22 @@ test "lua_closure1":
   let tc4 = lua.implementClosure proc():string = return "test"
   tc4.call(void)
   #discard tc.call(1,(int))
+type TestUserdata2* = object
+  val*:int
+proc implementUserdata*(t:type TestUserdata2,lua:LuaState,meta:LuaMetatable) =
+  meta.registerMethods:
+    proc testmethod(self:TestUserdata2,a:int):int =
+      return self.val+a
+proc t(lua:LuaState,meta:LuaMetatable) =
+  TestUserdata2.implementUserdata(lua,meta)
+test "lua_userdata2":
+  let lua = newLuaState()
+  let L = lua.raw
+  let udata = TestUserdata2(val:2)
+  let fn1 = lua.load("""
+  local args = {...}
+  local udata = args[1]
+  print('UDATA', udata )
+  print('testmethod',udata:testmethod(1))
+  """)
+  fn1.call(udata,void)

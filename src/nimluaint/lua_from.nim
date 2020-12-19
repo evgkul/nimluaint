@@ -2,6 +2,7 @@ import utils
 import lua_api
 import lua_state
 import macros
+
 template implementFromluaraw*(ty:typedesc,code:untyped) =
   proc fromluaraw*(to{.inject.}:var ty, lua{.inject.}:LuaState, pos{.inject.}:var cint,max{.inject.}:cint) =
     let L{.inject.} = lua.raw

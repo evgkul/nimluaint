@@ -7,6 +7,7 @@ import lua_from
 import macros
 import strutils
 import strformat
+import lua_metatable
 var pincr {.compiletime.} = 0
 
 type InnerClosure = proc():cint {.closure,raises:[].}
@@ -44,7 +45,8 @@ proc rewriteReturn(node:var NimNode,rename_to:NimNode):bool {.compiletime,discar
       node[i] = c
 
 macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
-  closure.expectKind nnkLambda
+  if not (closure.kind in {nnkLambda,nnkProcDef}):
+    error(&"Invalid expression type: {closure.kind}",closure)
   let i_renameto = ident "interceptReturn"
   let pushc = bindSym "pushclosure"
   let pstate = bindSym "PState"
@@ -65,14 +67,14 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
         `i_settop`(l,-1)
         discard `i_error`(l)
       `i_force_keep`(keep_functions)
-  echo "INP: ",closure.treeRepr
+  #echo "INP: ",closure.treeRepr
   let params = closure.params
-  echo "PARAMS: ",params.treeRepr
+  #echo "PARAMS: ",params.treeRepr
   let ret = params[0]
   let args = params[1..^1]
   var body = closure.body
   rewriteReturn(body,i_renameto)
-  echo "RET: ",ret.treeRepr
+  #echo "RET: ",ret.treeRepr
   let cname = &"cfunction_{pincr}"
   let inner_cname = &"inner_{cname}"
   pincr+=1
@@ -94,7 +96,7 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
     #tuple[a,b,c:int,d:float]
   for e in args:
     args_tuple.add e
-  echo "ARGSSTUPLE ",args_tuple.treeRepr
+  #echo "ARGSSTUPLE ",args_tuple.treeRepr
   let i_lua_args = genSym(nskVar,"lua_args")
   let i_gettop = bindSym "gettop"
   var args_bindings = newStmtList()
@@ -103,9 +105,9 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
     if last.kind!=nnkEmpty:
       error("Default values are not yet supported!",last)
     let ty = arg[^2]
-    echo "TY ",ty.treeRepr
+    #echo "TY ",ty.treeRepr
     for def in arg[0..^3]:
-      echo "DEF ",def.treeRepr
+      #echo "DEF ",def.treeRepr
       args_bindings.add quote do:
         template `def`():untyped =
           `i_lua_args`.`def`
@@ -166,3 +168,24 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
       {.warning[GcUnsafe]:off.}
       `res`
   #error("NIY",closure)
+
+
+macro registerMethods*(meta:LuaMetatable,methods:untyped) =
+  #echo "METHODS ",methods.treeRepr
+  let i_meta = genSym(nskLet,"meta")
+  let i_lua = genSym(nskLet,"lua")
+  var res = newStmtList quote do:
+    let `i_meta`:LuaMetatable = `meta`
+    let `i_lua`:LuaState = `i_meta`.LuaReference.lua
+  for m in methods:
+    #echo "METHOD ",m.treeRepr
+    m.expectKind nnkProcDef
+    let name = m.name.strVal
+    res.add quote do:
+      `i_meta`.setIndex(`name`):
+        `i_lua`.implementClosure `m`
+  return quote do:
+    block:
+      `res`
+    
+  

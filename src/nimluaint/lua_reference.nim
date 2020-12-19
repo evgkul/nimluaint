@@ -43,3 +43,8 @@ template checkType*(lref:LuaReference,expected:LUA_TYPE) =
 LuaReference.implementFromluaraw:
   L.pushvalue pos
   lua.popReference()
+
+proc newtable*(lua:LuaState):LuaReference =
+  let L = lua.raw
+  L.newtable()
+  return lua.popReference()
