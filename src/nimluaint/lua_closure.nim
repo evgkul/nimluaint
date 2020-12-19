@@ -43,6 +43,7 @@ proc rewriteReturn(node:var NimNode,rename_to:NimNode):bool {.compiletime,discar
 
 template buildInnerClosure*(lua:LuaState,body:untyped,interceptReturn:untyped,rettype:typedesc):untyped =
   #bind rewriteReturn
+  mixin toluaraw
   try:
     var lua_res:rettype
     block lua_code:
@@ -108,7 +109,8 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
   
   res.add quote do:
     proc `inner_proc`():cint {.closure, exportc: `inner_cname`,raises:[].} =
-      buildInnerClosure(`lua`,`body`,`i_renameto`,`ret`)
+      let lua = `lua`
+      buildInnerClosure(lua,`body`,`i_renameto`,`ret`)
     proc `cname_ident`(L:`pstate`):cint {.cdecl, importc, codegenDecl: `cdecl`.}
     `pushc`(`lua`,`cname_ident`,`inner_proc`)
   return quote do:
