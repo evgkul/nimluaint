@@ -188,7 +188,9 @@ type TestUserdata2* = object
 proc implementUserdata*(t:type TestUserdata2,lua:LuaState,meta:LuaMetatable) =
   meta.registerMethods:
     proc testmethod(self:var TestUserdata2,a:int):int =
-      return self.val+a
+      let val = self.val+a
+      self.val = val
+      return val
 proc t(lua:LuaState,meta:LuaMetatable) =
   TestUserdata2.implementUserdata(lua,meta)
 test "lua_userdata2":

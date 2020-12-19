@@ -116,10 +116,14 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
     for def in arg[0..^3]:
       #echo "DEF ",def.treeRepr
       args_tuple.add newIdentDefs(def,ty)
-
-      args_bindings.add quote do:
-        template `def`():`ty` =
-          `i_lua_args`.`def`
+      if isVar:
+        args_bindings.add quote do:
+          template `def`():untyped =
+            `i_lua_args`.`def`[]
+      else:
+        args_bindings.add quote do:
+          template `def`():`ty` =
+            `i_lua_args`.`def`
   
   echo "ARGSSTUPLE ",args_tuple.treeRepr
   let rettype = if ret.kind == nnkEmpty:
