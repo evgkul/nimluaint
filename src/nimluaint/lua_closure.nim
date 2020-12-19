@@ -3,6 +3,7 @@ import lua_state
 import lua_reference
 import lua_userdata
 import lua_to
+import lua_from
 import macros
 import strutils
 import strformat
@@ -40,26 +41,6 @@ proc rewriteReturn(node:var NimNode,rename_to:NimNode):bool {.compiletime,discar
     var c = node[i]
     if rewriteReturn(c,rename_to):
       node[i] = c
-
-template buildInnerClosure*(lua:LuaState,body:untyped,interceptReturn:untyped,rettype:typedesc):untyped =
-  #bind rewriteReturn
-  mixin toluaraw
-  try:
-    var lua_res:rettype
-    block lua_code:
-      template result():untyped = lua_res
-      template interceptReturn(a:untyped) =
-        lua_res = a
-        break lua_code
-      when compiles(lua_res = body):
-        lua_res = body
-      else:
-        body
-    toluaraw(lua_res,lua)
-    return 1
-  except Exception as e:
-    echo "ERROR"
-    return -2
 
 macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
   closure.expectKind nnkLambda
@@ -107,10 +88,51 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
   let cname_ident =ident cname
   let inner_proc = ident inner_cname
   
+  var args_tuple = quote do:
+    tuple[]
+    #tuple[a,b,c:int,d:float]
+  for e in args:
+    args_tuple.add e
+  echo "ARGSSTUPLE ",args_tuple.treeRepr
+  let i_lua_args = genSym(nskVar,"lua_args")
+  let i_gettop = bindSym "gettop"
+  var args_bindings = newStmtList()
+  for arg in argstuple:
+    let last = arg[^1]
+    if last.kind!=nnkEmpty:
+      error("Default values are not yet supported!",last)
+    let ty = arg[^2]
+    echo "TY ",ty.treeRepr
+    for def in arg[0..^3]:
+      echo "DEF ",def.treeRepr
+      args_bindings.add quote do:
+        template `def`():untyped =
+          `i_lua_args`.`def`
+          
   res.add quote do:
     proc `inner_proc`():cint {.closure, exportc: `inner_cname`,raises:[].} =
       let lua {.inject.} = `lua`
-      buildInnerClosure(lua,`body`,`i_renameto`,`ret`)
+      let L = lua.raw
+      try:
+        var `i_lua_args`:`args_tuple`
+        var lua_pos = 1.cint
+        fromluaraw(`i_lua_args`,lua,lua_pos,`i_gettop`(L))
+        `args_bindings`
+        var lua_res:`ret`
+        block lua_code:
+          template result():untyped = lua_res
+          template interceptReturn(a:untyped) =
+            lua_res = a
+            break lua_code
+          when compiles(lua_res = `body`):
+            lua_res = `body`
+          else:
+            `body`
+        toluaraw(lua_res,lua)
+        return 1
+      except Exception as e:
+        echo "ERROR"
+        return -2
     proc `cname_ident`(L:`pstate`):cint {.cdecl, importc, codegenDecl: `cdecl`.}
     `pushc`(`lua`,`cname_ident`,`inner_proc`)
   return quote do:

@@ -11,6 +11,7 @@ import nimluaint
 import nimluaint/lua_api
 import nimluaint/lua_from
 import macros
+import strformat
 #test "can add":
 #  check add(5, 5) == 10
 
@@ -167,6 +168,6 @@ test "lua_closure1":
   let lua = newLuaState()
   let L = lua.raw
   expandMacros:
-    let tc = lua.implementClosure proc(a,b,c:int,d:float):string = return "HELLOWORLD"
-  check tc.call((1,2,3,4.0),string)=="HELLOWORLD"
+    let tc = lua.implementClosure proc(a,b,c:int,d:float):string = return &"HELLOWORLD {a} {b} {c} {d}"
+  check tc.call((1,2,3,4.5),string)=="HELLOWORLD 1 2 3 4.5"
   #discard tc.call(1,(int))
