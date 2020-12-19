@@ -2,6 +2,7 @@ import lua_api
 import lua_state
 import lua_reference
 import lua_userdata
+import lua_to
 import macros
 import strutils
 import strformat
@@ -53,7 +54,8 @@ template buildInnerClosure*(lua:LuaState,body:untyped,interceptReturn:untyped,re
         lua_res = body
       else:
         body
-      return 0
+    toluaraw(lua_res,lua)
+    return 1
   except Exception as e:
     echo "ERROR"
     return -2
@@ -96,7 +98,10 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
     void* e = lua_touserdata(L,PTRINDEX);
     int rcode = INNERFUNC(e);
     printf("HELLO FROM CLOSURE!\n");
-    return 0;
+    if(rcode==-2){
+      lua_error(L);
+    }
+    return rcode;
   }""".replace("CFUNC",cname).replace("PTRINDEX",$ptrindex).replace("INNERFUNC",inner_cname)
   let cname_ident =ident cname
   let inner_proc = ident inner_cname
