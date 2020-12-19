@@ -91,16 +91,16 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
   let cname_ident =ident cname
   let inner_proc = ident inner_cname
   
-  var args_tuple = quote do:
-    tuple[]
+  
     #tuple[a,b,c:int,d:float]
-  for e in args:
-    args_tuple.add e
-  #echo "ARGSSTUPLE ",args_tuple.treeRepr
+ 
+  
   let i_lua_args = genSym(nskVar,"lua_args")
   let i_gettop = bindSym "gettop"
   var args_bindings = newStmtList()
-  for arg in argstuple:
+  var args_tuple = quote do:
+    tuple[]
+  for arg in args:
     let last = arg[^1]
     if last.kind!=nnkEmpty:
       error("Default values are not yet supported!",last)
@@ -108,10 +108,13 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
     #echo "TY ",ty.treeRepr
     for def in arg[0..^3]:
       #echo "DEF ",def.treeRepr
+      args_tuple.add newIdentDefs(def,ty)
+
       args_bindings.add quote do:
-        template `def`():untyped =
+        template `def`():`ty` =
           `i_lua_args`.`def`
   
+  echo "ARGSSTUPLE ",args_tuple.treeRepr
   let rettype = if ret.kind == nnkEmpty:
     quote do:
       void
