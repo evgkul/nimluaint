@@ -97,14 +97,21 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
   
   let i_lua_args = genSym(nskVar,"lua_args")
   let i_gettop = bindSym "gettop"
-  var args_bindings = newStmtList()
   var args_tuple = quote do:
     tuple[]
+  var args_bindings = newStmtList()
   for arg in args:
     let last = arg[^1]
     if last.kind!=nnkEmpty:
       error("Default values are not yet supported!",last)
-    let ty = arg[^2]
+    var ty = arg[^2]
+    var isVar = false
+    if ty.kind==nnkVarTy:
+      isVar = true
+      let copy = ty
+      ty = newNimNode(nnkPtrTy,copy)
+      for val in copy:
+        ty.add val
     #echo "TY ",ty.treeRepr
     for def in arg[0..^3]:
       #echo "DEF ",def.treeRepr
