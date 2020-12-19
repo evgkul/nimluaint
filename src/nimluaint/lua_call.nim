@@ -7,6 +7,9 @@ import lua_to
 
 type LuaCallError* = object of CatchableError
   nil
+
+type LuaCallNoArgs* = tuple[]
+
 proc call*[T](lref:LuaReference,args:T,rettype:typedesc):rettype =
   let lua = lref.lua
   let L = lua.raw
@@ -19,7 +22,8 @@ proc call*[T](lref:LuaReference,args:T,rettype:typedesc):rettype =
     var pos = start+1
     when rettype is not void:
       result.fromluaraw(lua,pos,L.gettop)
-
+template call*(lref:LuaReference,rettype:typedesc):untyped =
+  lref.call((),rettype)
 proc load*(lua:LuaState,code:string,name:string = code):LuaReference =
   let L = lua.raw
   L.protectStack start:

@@ -179,4 +179,6 @@ test "lua_closure1":
     t = 3
   tc3.call(2,void)
   check t==2
+  let tc4 = lua.implementClosure proc():string = return "test"
+  tc4.call(void)
   #discard tc.call(1,(int))
