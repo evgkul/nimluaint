@@ -8,14 +8,15 @@ import lua_to
 type LuaCallError* = object of CatchableError
   nil
 
-type LuaCallNoArgs* = tuple[]
-
 proc call*[T](lref:LuaReference,args:T,rettype:typedesc):rettype =
   let lua = lref.lua
   let L = lua.raw
   L.protectStack start:
     lref.pushOnStack()
-    let argscount = args.toluaraw_multi lua
+    let argscount = when T is not tuple[]:
+      args.toluaraw_multi lua
+    else:
+      0.cint
     if L.pcall(argscount,-1,0)!=0:
       let errmsg = L.tostring(start+1)
       raise newException(LuaCallError,errmsg)
