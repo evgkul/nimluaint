@@ -46,7 +46,7 @@ proc toluaraw*[T:LuaUserdataImpl](value:T,lua:LuaState) =
   store[]=value
   lua.pushUserdataMetatable T
   discard L.setmetatable(-2)
-proc fromluaraw*[T:LuaUserdataImpl](to:var T,lua:LuaState,pos:var cint,max:cint) =
+proc fromluaraw*[T:LuaUserdataImpl](to:var ptr T,lua:LuaState,pos:var cint,max:cint) =
   let id = getTypeID T
   let L = lua.raw
   L.protectStack start:
@@ -59,7 +59,10 @@ proc fromluaraw*[T:LuaUserdataImpl](to:var T,lua:LuaState,pos:var cint,max:cint)
     let exp = lua.inner.typemetatables.getOrDefault id
     if metaptr!=exp.metaptr:
       luaInvalidType($T,"unknown userdata")
-    let data = cast[ptr T](L.topointer pos)
-    to = data[]
+    to = cast[ptr T](L.topointer pos)
 
   pos+=1
+proc fromluaraw*[T:LuaUserdataImpl](to:var T,lua:LuaState,pos:var cint,max:cint) =
+  var p:ptr T
+  p.fromluaraw(lua,pos,max)
+  to = p[]
