@@ -114,11 +114,11 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
       let lua {.inject.} = `lua`
       let L = lua.raw
       try:
-        var `i_lua_args`:`args_tuple`
+        var `i_lua_args` = default `args_tuple`
         var lua_pos = 1.cint
         fromluaraw(`i_lua_args`,lua,lua_pos,`i_gettop`(L))
         `args_bindings`
-        var lua_res:`ret`
+        var lua_res:`ret` = default `ret`
         block lua_code:
           template result():untyped = lua_res
           template interceptReturn(a:untyped) =
@@ -145,5 +145,6 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
     `pushc`(`lua`,`cname_ident`,`inner_proc`)
   return quote do:
     block:
+      {.warning[GcUnsafe]:off.}
       `res`
   #error("NIY",closure)

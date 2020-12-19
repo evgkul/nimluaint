@@ -30,5 +30,6 @@ macro toluaraw_multi_tuple_impl(value:tuple,lua:LuaState) =
 
 
 proc toluaraw_multi*[T:tuple](value:T,lua:LuaState):cint =
+  result = 0
   value.toluaraw_multi_tuple_impl lua
 
