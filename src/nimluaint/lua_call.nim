@@ -17,7 +17,8 @@ proc call*[T](lref:LuaReference,args:T,rettype:typedesc):rettype =
       let errmsg = L.tostring(start+1)
       raise newException(LuaCallError,errmsg)
     var pos = start+1
-    result.fromluaraw(lua,pos,L.gettop)
+    when rettype is not void:
+      result.fromluaraw(lua,pos,L.gettop)
 
 proc load*(lua:LuaState,code:string,name:string = code):LuaReference =
   let L = lua.raw

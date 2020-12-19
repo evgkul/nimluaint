@@ -177,6 +177,6 @@ test "lua_closure1":
     t = val
     return
     t = 3
-  discard tc3.call(2,int)
+  tc3.call(2,void)
   check t==2
   #discard tc.call(1,(int))
