@@ -109,7 +109,7 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
   
   res.add quote do:
     proc `inner_proc`():cint {.closure, exportc: `inner_cname`,raises:[].} =
-      let lua = `lua`
+      let lua {.inject.} = `lua`
       buildInnerClosure(lua,`body`,`i_renameto`,`ret`)
     proc `cname_ident`(L:`pstate`):cint {.cdecl, importc, codegenDecl: `cdecl`.}
     `pushc`(`lua`,`cname_ident`,`inner_proc`)
