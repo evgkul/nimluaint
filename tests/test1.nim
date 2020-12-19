@@ -191,7 +191,7 @@ proc implementUserdata*(t:type TestUserdata2,lua:LuaState,meta:LuaMetatable) =
       let val = self.val+a
       self.val = val
       return val
-proc t(lua:LuaState,meta:LuaMetatable) =
+proc t(lua:LuaState,meta:LuaMetatable) {.used.} =
   TestUserdata2.implementUserdata(lua,meta)
 test "lua_userdata2":
   let lua = newLuaState()
