@@ -131,7 +131,15 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
         toluaraw(lua_res,lua)
         return 1
       except Exception as e:
-        echo "ERROR"
+        #echo "ERROR"
+        var errmsg = ""
+        errmsg.add e.name
+        errmsg.add ": "
+        errmsg.add e.msg
+        when compileOption("stacktrace"):
+          errmsg.add("\n  ")
+          errmsg.add(e.getStackTrace().replace("\n","\n  "))
+        discard L.pushstring(errmsg)
         return -2
     proc `cname_ident`(L:`pstate`):cint {.cdecl, importc, codegenDecl: `cdecl`.}
     `pushc`(`lua`,`cname_ident`,`inner_proc`)

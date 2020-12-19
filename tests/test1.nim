@@ -167,7 +167,9 @@ test "lua_userdata1":
 test "lua_closure1":
   let lua = newLuaState()
   let L = lua.raw
-  expandMacros:
-    let tc = lua.implementClosure proc(a,b,c:int,d:float):string = return &"HELLOWORLD {a} {b} {c} {d}"
+  let tc = lua.implementClosure proc(a,b,c:int,d:float):string = return &"HELLOWORLD {a} {b} {c} {d}"
   check tc.call((1,2,3,4.5),string)=="HELLOWORLD 1 2 3 4.5"
+  let tc2 = lua.implementClosure proc():string = raise newException(Exception,"TestException")
+  expect LuaCallError:
+    discard tc2.call((1),string)
   #discard tc.call(1,(int))
