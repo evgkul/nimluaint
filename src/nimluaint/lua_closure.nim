@@ -20,14 +20,14 @@ proc implementUserdata*(t:type NimClosureWrapper,lua:LuaState,meta:LuaReference)
   discard nil
 
 proc pushclosure(lua:LuaState,rawclosure:TCFunction,inner:InnerClosure):LuaReference =
-  echo "PUSHING"
+  #echo "PUSHING"
   let L = lua.raw
   let wrapper = NimClosureWrapper(inner:inner)
   let env = inner.rawEnv
   GC_ref wrapper
   L.pushlightuserdata env
   L.pushcclosure(rawclosure,1)
-  echo "PUSHED"
+  #echo "PUSHED"
   return lua.popReference()
 proc force_keep[T](val:T) {.inline.} =
   ##Forces a value to be not removed by nim compiler
@@ -93,11 +93,6 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
   }""".replace("CFUNC",cname).replace("PTRINDEX",$ptrindex).replace("INNERFUNC",inner_cname)
   let cname_ident =ident cname
   let inner_proc = ident inner_cname
-  
-  
-    #tuple[a,b,c:int,d:float]
- 
-  
   let i_lua_args = genSym(nskVar,"lua_args")
   let i_gettop = bindSym "gettop"
   var args_tuple = quote do:
@@ -128,7 +123,6 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
           template `def`():`ty` =
             `i_lua_args`.`def`
   
-  echo "ARGSSTUPLE ",args_tuple.treeRepr
   let rettype = if ret.kind == nnkEmpty:
     quote do:
       void
