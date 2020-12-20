@@ -34,22 +34,23 @@ type TestUserdata2* = object
   val*:int
 proc implementUserdata*(t:type TestUserdata2,l:LuaState,meta:LuaMetatable) =
   discard nil
-  #[meta.registerMethods:
+  meta.registerMethods:
     proc testmethod(self:var TestUserdata2,a:int):int =
       let val = self.val+a
       self.val = val
       return val
-    proc test2(self:var TestUserdata2,b:int):int = return b]#
-  let tc = l.implementClosure proc(self:var TestUserdata2,a:int):int =
-    let val = self.val+a
-    self.val = val
-    return val
-  meta.setIndex("testmethod",tc)
+    proc test2(self:var TestUserdata2,b:int):int = return b
+  #let tc = l.implementClosure proc(self:var TestUserdata2,a:int):int =
+  #  let val = self.val+a
+  #  self.val = val
+  #  return val
+  #meta.setIndex("testmethod",tc)
   #[meta.setIndex("testmethod"):
     expandMacros meta.LuaReference.lua.implementClosure proc(self:var TestUserdata2,a:int):int =
       let val = self.val+a
       self.val = val
       return val]#
+    
     
 test "lua_userdata2":
   let lua = newLuaState()

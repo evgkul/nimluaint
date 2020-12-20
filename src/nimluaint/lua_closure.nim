@@ -200,8 +200,10 @@ macro registerMethods*(meta:LuaMetatable,methods:untyped) =
     m.expectKind nnkProcDef
     let name = m.name.strVal
     res.add quote do:
-      `i_meta`.setIndex(`name`):
-        `i_lua`.implementClosure `m`
+      block:
+        let clos = `i_lua`.implementClosure `m`
+        `i_meta`.setIndex(`name`,clos)
+        
   return quote do:
     block:
       `res`
