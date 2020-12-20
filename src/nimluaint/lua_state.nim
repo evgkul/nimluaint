@@ -36,7 +36,8 @@ type LuaState* = object
   inner: LuaStateInner
 LuaState.exportReadonly raw
 LuaState.exportReadonly inner
-
+proc newLuaState*(inner:LuaStateInner):LuaState =
+  return LuaState(raw:inner.raw,inner:inner)
 proc newLuaState*(raw:PState,autodestroy:bool=false):LuaState =
   return LuaState(raw:raw,inner:LuaStateInner(raw:raw,autodestroy:autodestroy))
 proc newLuaState*(openlibs:bool=true):LuaState =

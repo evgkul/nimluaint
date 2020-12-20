@@ -11,8 +11,11 @@ import lua_metatable
 var pincr {.compiletime.} = 0
 
 type InnerClosure = proc():cint {.closure,raises:[].}
-type NimClosureWrapper = ref object
+type NimClosureWrapperInner = object
   inner: InnerClosure
+
+type NimClosureWrapper = ref NimClosureWrapperInner
+
 proc implementUserdata*(t:type NimClosureWrapper,lua:LuaState,meta:LuaReference) =
   discard nil
 
@@ -134,8 +137,9 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
 
   res.add quote do:
     type RetType = `rettype`
+    let luainner {.cursor.} = `lua`.inner
     proc `inner_proc`():cint {.closure, exportc: `inner_cname`,raises:[].} =
-      let lua {.inject.} = `lua`
+      let lua {.inject.} = newLuaState luainner
       let L = lua.raw
       try:
         var `i_lua_args` = default `args_tuple`

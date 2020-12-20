@@ -207,5 +207,6 @@ test "lua_userdata2":
   print('UDATA', udata )
   print('testmethod',udata:testmethod(1))
   --print('test2',udata.testmethod(udata_wrong,2))
+  collectgarbage()
   """)
   fn1.call((udata,udata_wrong),void)
