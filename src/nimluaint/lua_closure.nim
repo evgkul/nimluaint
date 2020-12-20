@@ -137,7 +137,7 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
 
   res.add quote do:
     type RetType = `rettype`
-    let luainner {.cursor.} = `lua`.inner
+    var luainner {.cursor.} = `lua`.inner
     proc `inner_proc`():cint {.closure, exportc: `inner_cname`,raises:[].} =
       let lua {.inject.} = newLuaState luainner
       let L = lua.raw
@@ -180,7 +180,7 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
         discard L.pushstring(errmsg)
         return -2
     proc `cname_ident`(L:`pstate`):cint {.cdecl, importc, codegenDecl: `cdecl`.}
-    `pushc`(`lua`,`cname_ident`,`inner_proc`)
+    `pushc`(newLuaState luainner,`cname_ident`,`inner_proc`)
   return quote do:
     block:
       {.warning[GcUnsafe]:off.}

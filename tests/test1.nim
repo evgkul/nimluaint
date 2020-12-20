@@ -185,9 +185,14 @@ test "lua_closure1":
   #discard tc.call(1,(int))
 type TestUserdata2* = object
   val*:int
-proc implementUserdata*(t:type TestUserdata2,lua:LuaState,meta:LuaMetatable) =
-  meta.registerMethods:
+proc implementUserdata*(t:type TestUserdata2,l:LuaState,meta:LuaMetatable) =
+  #[meta.registerMethods:
     proc testmethod(self:var TestUserdata2,a:int):int =
+      let val = self.val+a
+      self.val = val
+      return val]#
+  meta.setIndex("testmethod"):
+    l.implementClosure proc(self:var TestUserdata2,a:int):int =
       let val = self.val+a
       self.val = val
       return val

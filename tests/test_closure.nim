@@ -32,12 +32,25 @@ addHandler logger
 
 type TestUserdata2* = object
   val*:int
-proc implementUserdata*(t:type TestUserdata2,lua:LuaState,meta:LuaMetatable) =
-  meta.registerMethods:
+proc implementUserdata*(t:type TestUserdata2,l:LuaState,meta:LuaMetatable) =
+  discard nil
+  #[meta.registerMethods:
     proc testmethod(self:var TestUserdata2,a:int):int =
       let val = self.val+a
       self.val = val
       return val
+    proc test2(self:var TestUserdata2,b:int):int = return b]#
+  let tc = l.implementClosure proc(self:var TestUserdata2,a:int):int =
+    let val = self.val+a
+    self.val = val
+    return val
+  meta.setIndex("testmethod",tc)
+  #[meta.setIndex("testmethod"):
+    expandMacros meta.LuaReference.lua.implementClosure proc(self:var TestUserdata2,a:int):int =
+      let val = self.val+a
+      self.val = val
+      return val]#
+    
 test "lua_userdata2":
   let lua = newLuaState()
   let L = lua.raw
@@ -50,8 +63,11 @@ test "lua_userdata2":
   local udata = args[1]
   local udata_wrong = args[2]
   print('UDATA', udata )
-  print('testmethod',udata:testmethod(1))
+  --print('testmethod',udata:testmethod(1))
   --print('test2',udata.testmethod(udata_wrong,2))
   collectgarbage()
   """)
   fn1.call((udata),void)
+  #GC_unref(lua.inner)
+  #GC_unref(lua.inner)
+  GC_runOrc()

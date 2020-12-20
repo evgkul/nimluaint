@@ -18,7 +18,7 @@ type LuaUserdataInfo* = tuple[
   metaptr:pointer
 ]
 
-type LuaStateInnerObj = object
+type LuaStateInnerObj* = object
   raw: PState
   autodestroy*: bool
   typemetatables*: Table[TypeID,LuaUserdataInfo]
