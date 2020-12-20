@@ -5,26 +5,12 @@
 #* Lua.org, PUC-Rio, Brazil (http://www.lua.org)
 #* See Copyright Notice at the end of this file
 #
-const
-  LUA_VERSION_MAJOR* = "5"
-  LUA_VERSION_MINOR* = "4"
-  LUA_VERSION_NUM* = 542
-  LUA_VERSION_RELEASE* = "2"
-  LUA_VERSION* = "Lua " & LUA_VERSION_MAJOR & "." & LUA_VERSION_MINOR
-  #LUA_RELEASE = LUA_VERSION & "." & LUA_VERSION_RELEASE
-  #LUA_COPYRIGHT = LUA_RELEASE & " Copyright (C) 1994-2012 Lua.org, PUC-Rio"
-  #LUA_AUTHORS = "R. Ierusalimschy, L. H. de Figueiredo, W. Celes"
+
+include lua_5_4_2_consts
 
 #{.deadCodeElim: on.}
 #when defined(useLuaJIT):
 #  {.warning: "Lua JIT does not support Lua 5.3 at this time."}
-
-const
-  # mark for precompiled code ('<esc>Lua')
-  LUA_SIGNATURE* = "\x1BLua"
-
-  # option for multiple returns in 'lua_pcall' and 'lua_call'
-  LUA_MULTRET* = (-1)
 
 #
 #* pseudo-indices
@@ -42,9 +28,6 @@ else:
     LUAI_MAXSTACK* = 15000
 
 # reserve some space for error handling
-const
-  LUAI_FIRSTPSEUDOIDX* = (-LUAI_MAXSTACK - 1000)
-  LUA_REGISTRYINDEX* = LUAI_FIRSTPSEUDOIDX
 
 proc upvalueindex*(i: int): int {.inline.} = LUA_REGISTRYINDEX - i
 
@@ -52,15 +35,6 @@ proc upvalueindex*(i: int): int {.inline.} = LUA_REGISTRYINDEX - i
 type TThreadStatus* {.size:sizeof(cint).}= enum
   Thread_OK = 0, Thread_Yield, Thread_ErrRun, Thread_ErrSyntax,
   Thread_ErrMem, Thread_ErrGCMM, Thread_ErrErr
-
-const
-  LUA_OK* = 0
-  LUA_YIELD* = 1
-  LUA_ERRRUN* = 2
-  LUA_ERRSYNTAX* = 3
-  LUA_ERRMEM* = 4
-  LUA_ERRGCMM* = 5
-  LUA_ERRERR* = 6
 
 type
   PState* = distinct pointer
@@ -74,34 +48,11 @@ type
   #* prototype for memory-allocation functions
   TAlloc* = proc (ud, p: pointer; osize, nsize: csize_t): pointer
 
-#* basic types
-const
-  LUA_TNONE* = (-1)
-  LUA_TNIL* = 0
-  LUA_TBOOLEAN* = 1
-  LUA_TLIGHTUSERDATA* = 2
-  LUA_TNUMBER* = 3
-  LUA_TSTRING* = 4
-  LUA_TTABLE* = 5
-  LUA_TFUNCTION* = 6
-  LUA_TUSERDATA* = 7
-  LUA_TTHREAD* = 8
-  LUA_NUMTAGS* = 9
 
 type
   LUA_TYPE* = enum
     LNONE = -1, LNIL, LBOOLEAN, LLIGHTUSERDATA, LNUMBER,
     LSTRING, LTABLE, LFUNCTION, LUSERDATA, LTHREAD, LNUMTAGS
-
-# minimum Lua stack available to a C function
-const
-  LUA_MINSTACK* = 20
-
-# predefined values in the registry
-const
-  LUA_RIDX_MAINTHREAD* = 1
-  LUA_RIDX_GLOBALS* = 2
-  LUA_RIDX_LAST* = LUA_RIDX_GLOBALS
 
 type
   lua_Number* = float64  # type of numbers in Lua
@@ -159,20 +110,9 @@ proc topointer*(L: PState; idx: cint): pointer {.ilua.}
 #
 #* Comparison and arithmetic functions
 #
-const
-  LUA_OPADD* = 0            # ORDER TM
-  LUA_OPSUB* = 1
-  LUA_OPMUL* = 2
-  LUA_OPDIV* = 3
-  LUA_OPMOD* = 4
-  LUA_OPPOW* = 5
-  LUA_OPUNM* = 6
+
 proc arith*(L: PState; op: cint) {.ilua.}
 
-const
-  LUA_OPEQ* = 0
-  LUA_OPLT* = 1
-  LUA_OPLE* = 2
 proc rawequal*(L: PState; idx1: cint; idx2: cint): cint {.ilua.}
 proc compare*(L: PState; idx1: cint; idx2: cint; op: cint): cint {.ilua.}
 
@@ -247,19 +187,7 @@ proc status*(L: PState): cint {.ilua.}
 #
 #* garbage-collection function and options
 #
-const
-  LUA_GCSTOP* = 0
-  LUA_GCRESTART* = 1
-  LUA_GCCOLLECT* = 2
-  LUA_GCCOUNT* = 3
-  LUA_GCCOUNTB* = 4
-  LUA_GCSTEP* = 5
-  LUA_GCSETPAUSE* = 6
-  LUA_GCSETSTEPMUL* = 7
-  LUA_GCSETMAJORINC* = 8
-  LUA_GCISRUNNING* = 9
-  LUA_GCGEN* = 10
-  LUA_GCINC* = 11
+
 proc gc*(L: PState; what: cint; data: cint): cint {.ilua.}
 
 #
@@ -334,29 +262,9 @@ proc gettype*(L: PState, index: int): LUA_TYPE =
 #
 #* Event codes
 #
-const
-  LUA_HOOKCALL* = 0
-  LUA_HOOKRET* = 1
-  LUA_HOOKLINE* = 2
-  LUA_HOOKCOUNT* = 3
-  LUA_HOOKTAILCALL* = 4
-#
-#* Event masks
-#
-const
-  LUA_MASKCALL* = (1 shl LUA_HOOKCALL)
-  LUA_MASKRET* = (1 shl LUA_HOOKRET)
-  LUA_MASKLINE* = (1 shl LUA_HOOKLINE)
-  LUA_MASKCOUNT* = (1 shl LUA_HOOKCOUNT)
+
 # activation record
 
-
-#@@ LUA_IDSIZE gives the maximum size for the description of the source
-#@* of a function in debug information.
-#* CHANGE it if you want a different size.
-#
-const
-  LUA_IDSIZE* = 60
 
 # Functions to be called by the debugger in specific events
 type
@@ -472,20 +380,17 @@ when not defined(lua_assert):
 #
 
 # extra error code for `luaL_load'
-const
-  LUA_ERRFILE* = Thread_ErrErr.cint + 1'i32 #(LUA_ERRERR + 1)
+
 
 type
   luaL_Reg* {.pure, final.} = object
     name*: cstring
     fn*: TCFunction
 
-const
-  LUAL_NUMSIZES = (sizeof(lua_Integer)*16 + sizeof(lua_Number))
 
 ### IMPORT FROM "luaL_$1"
-proc checkversion*(L: PState; ver: lua_Number; sz: csize_t) {.importc: "luaL_checkversion_".}
-proc checkversion*(L: PState) {.inline.} = L.checkversion(LUA_VERSION_NUM, LUAL_NUMSIZES)
+#proc checkversion*(L: PState; ver: lua_Number; sz: csize_t) {.importc: "luaL_checkversion_".}
+#proc checkversion*(L: PState) {.inline.} = L.checkversion(LUA_VERSION_NUM, LUAL_NUMSIZES)
 
 proc getmetafield*(L: PState; obj: cint; e: cstring): cint {.iluaL.}
 proc callmeta*(L: PState; obj: cint; e: cstring): cint {.iluaL.}
@@ -511,10 +416,7 @@ proc checkoption*(L: PState; arg: cint; def: cstring; lst: var cstring): cint {.
 proc fileresult*(L: PState; stat: cint; fname: cstring): cint {.iluaL.}
 proc execresult*(L: PState; stat: cint): cint {.iluaL.}
 
-# pre-defined references
-const
-  LUA_NOREF* = (- 2)
-  LUA_REFNIL* = (- 1)
+
 proc luaref*(L: PState; t: cint): cint {.iluaL, importc:"luaL_ref".}
 proc unref*(L: PState; t: cint; iref: cint) {.iluaL.}
 proc loadfilex*(L: PState; filename: cstring; mode: cstring): cint {.iluaL.}

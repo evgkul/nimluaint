@@ -39,5 +39,9 @@ int main(){
     #else
     dumpConst(LUA_RIDX_GLOBALS);
     #endif
+    dumpComment("Debug");
+    dumpConst(LUA_IDSIZE);
+    dumpComment("Codes");
+    dumpConst(LUA_OK);
 
 }

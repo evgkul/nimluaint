@@ -23,3 +23,11 @@ const LUA_REFNIL* = -1
 Globals position
 ]#
 const LUA_RIDX_GLOBALS* = 2
+#[
+Debug
+]#
+const LUA_IDSIZE* = 60
+#[
+Codes
+]#
+const LUA_OK* = 0
