@@ -197,10 +197,15 @@ test "lua_userdata2":
   let lua = newLuaState()
   let L = lua.raw
   let udata = TestUserdata2(val:2)
+  var tarr:ref array[1,bool]
+  new tarr
+  let udata_wrong = TestUserdata(collref:tarr)
   let fn1 = lua.load("""
   local args = {...}
   local udata = args[1]
+  local udata_wrong = args[2]
   print('UDATA', udata )
   print('testmethod',udata:testmethod(1))
+  --print('test2',udata.testmethod(udata_wrong,2))
   """)
-  fn1.call(udata,void)
+  fn1.call((udata,udata_wrong),void)

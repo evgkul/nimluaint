@@ -155,7 +155,7 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
               {.error: "This proc's return type is void!".}
             template interceptReturn() =
               break lua_code
-          when compiles(lua_res = `body`):
+          when RetType is not void and compiles(lua_res = `body`):
             lua_res = `body`
           else:
             `body`
