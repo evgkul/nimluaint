@@ -5,8 +5,13 @@
 #* Lua.org, PUC-Rio, Brazil (http://www.lua.org)
 #* See Copyright Notice at the end of this file
 #
-
-include lua_5_4_2_consts
+import lua_defines
+when UseLuaVersion=="lua5.4":
+  include lua_5_4_2_consts
+elif UseLuaVersion=="luajit":
+  include luajit_consts
+else:
+  {.error: "Unknown lua version".}
 
 #{.deadCodeElim: on.}
 #when defined(useLuaJIT):
@@ -28,8 +33,10 @@ else:
     LUAI_MAXSTACK* = 15000
 
 # reserve some space for error handling
-
-proc upvalueindex*(i: int): int {.inline.} = LUA_REGISTRYINDEX - i
+when UseLuaVersion=="luajit":
+  template upvalueindex*(i:int):cint = LUA_GLOBALSINDEX-i.cint
+else:
+  proc upvalueindex*(i: int): int {.inline.} = LUA_REGISTRYINDEX - i
 
 # thread status
 type TThreadStatus* {.size:sizeof(cint).}= enum
@@ -141,7 +148,7 @@ proc rawget*(L: PState; idx: cint) {.ilua.}
 proc rawgeti*(L: PState; idx: cint; n: cint) {.ilua.}
 proc rawgetp*(L: PState; idx: cint; p: pointer) {.ilua.}
 proc createtable*(L: PState; narr: cint; nrec: cint) {.ilua.}
-when false:
+when UseLuaVersion=="luajit":
   proc newuserdata*(L: PState; sz: csize_t): pointer {.ilua.}
 else:
   proc newuserdatauv*(L: PState; sz: csize_t, nuvalue: cint): pointer {.ilua.}
@@ -153,7 +160,10 @@ proc getuservalue*(L: PState; idx: cint) {.ilua.}
 #
 #* set functions (stack -> Lua)
 #
-proc setglobal*(L: PState; variable: cstring) {.ilua.}
+when UseLuaVersion=="luajit":
+  template setglobal*(L: PState, variable:cstring) = setfield(L,LUA_GLOBALSINDEX,variable)
+else:
+  proc setglobal*(L: PState; variable: cstring) {.ilua.}
 proc settable*(L: PState; idx: cint) {.ilua.}
 proc setfield*(L: PState; idx: cint; k: cstring) {.ilua.}
 proc rawset*(L: PState; idx: cint) {.ilua.}
@@ -169,9 +179,12 @@ proc callk*(L: PState; nargs, nresults, ctx: cint; k: TCFunction) {.ilua.}
 proc call*(L: PState; n, r: cint) {.inline.} = L.callk(n, r, 0, nil)
 
 #proc getctx*(L: PState; ctx: ptr cint): cint {.ilua.}
-proc pcallk*(L: PState; nargs, nresults, errfunc, ctx: cint; k: TCFunction): cint {.ilua.}
-proc pcall*(L: PState; nargs, nresults, errFunc: cint): cint {.inline.} =
-  L.pcallK(nargs, nresults, errFunc, 0, nil)
+when UseLuaVersion=="luajit":
+  proc pcall*(L: PState; nargs, nresults, errFunc: cint): cint {.ilua.}
+else:
+  proc pcallk*(L: PState; nargs, nresults, errfunc, ctx: cint; k: TCFunction): cint {.ilua.}
+  proc pcall*(L: PState; nargs, nresults, errFunc: cint): cint {.inline.} =
+    L.pcallK(nargs, nresults, errFunc, 0, nil)
 
 proc load*(L: PState; reader: TReader; dt: pointer; chunkname, mode: cstring): cint {.ilua.}
 proc dump*(L: PState; writer: TWriter; data: pointer): cint {.ilua.}
@@ -239,8 +252,10 @@ proc isnoneornil*(L: PState; n: cint): bool {.inline.} =
 proc pushliteral*(L: PState, s: string): cstring {.inline, discardable.} =
   L.pushlstring(s, s.len.csize_t)
 
-proc pushglobaltable*(L: PState) {.inline.} =
-  L.rawgeti(LUA_REGISTRYINDEX, LUA_RIDX_GLOBALS)
+when UseLuaVersion=="luajit":
+  template pushglobaltable*(L:PState) = L.pushvalue(LUA_GLOBALSINDEX)
+else:
+  template pushglobaltable*(L:PState) = L.rawgeti(LUA_REGISTRYINDEX, LUA_RIDX_GLOBALS)
 
 proc tostring*(L: PState; index: cint): string =
   var len: csize_t = 0
