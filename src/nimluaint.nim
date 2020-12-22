@@ -1,7 +1,7 @@
-import nimluaint/[lua_api,lua_builder,lua_state,lua_reference,lua_call,lua_to,lua_rawtable,lua_userdata,lua_closure,lua_metatable]
+import nimluaint/[lua_api,lua_builder,lua_state,lua_reference,lua_call,lua_to,lua_rawtable,lua_userdata,lua_closure,lua_metatable,lua_defines]
 import macros
-
-build_lua()
+when EmbedLua:
+  build_lua()
 
 export lua_state
 export lua_reference
