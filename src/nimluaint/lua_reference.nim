@@ -48,3 +48,7 @@ proc newtable*(lua:LuaState):LuaReference =
   let L = lua.raw
   L.newtable()
   return lua.popReference()
+
+proc globals*(lua:LuaState):LuaReference =
+  lua.raw.pushglobaltable()
+  return lua.popReference()

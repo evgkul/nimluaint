@@ -1,0 +1,1 @@
+WARNING: this repository is intended to be used in my another project. API stability is not guaranteed
