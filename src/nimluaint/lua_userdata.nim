@@ -7,9 +7,10 @@ import lua_rawtable
 import lua_metatable
 import utils
 import tables
+import macros
 
 type LuaUserdataImpl* = concept type t
-  t.implementUserdata(LuaState,LuaMetatable)
+  t.buildMetatable(LuaState,LuaMetatable)
 
 proc pushUserdataMetatable*(lua:LuaState,ty:typedesc) =
   let id = getTypeID ty
@@ -22,7 +23,7 @@ proc pushUserdataMetatable*(lua:LuaState,ty:typedesc) =
     L.pushvalue(-1)
     let metaptr = L.topointer(-1)
     let meta = lua.popReference()
-    ty.implementUserdata(lua,meta.LuaMetatable)
+    ty.buildMetatable(lua,meta.LuaMetatable)
     meta.autodestroy = false
     let metaid = meta.rawref
     lua.inner.typemetatables[id]=(metaid,metaptr)
@@ -66,3 +67,17 @@ proc fromluaraw*[T:LuaUserdataImpl](to:var T,lua:LuaState,pos:var cint,max:cint)
   var p:ptr T
   p.fromluaraw(lua,pos,max)
   to = p[]
+
+macro implementUserdata*(ty: typedesc,lua:untyped,meta:untyped,code:untyped) =
+  #proc buildMetatableRaw(lua:LuaState,meta:LuaMetatable) =
+  #  code
+  #proc buildMetatable*(t: type ty,lua:LuaState,meta:LuaMetatable) =
+  #  #buildMetatableRaw(lua,meta)
+  #  code
+  #echo "R ",ty.treeRepr
+  let test = genSym(nskProc,"testfn")
+  result = quote do:
+    proc buildMetatable*(t: type `ty`,`lua`:LuaState,`meta`:LuaMetatable) =
+      `code`
+    proc `test`() =
+      `ty`.buildMetatable(default LuaState,default LuaMetatable)

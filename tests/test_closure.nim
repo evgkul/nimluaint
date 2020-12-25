@@ -32,7 +32,7 @@ addHandler logger
 
 type TestUserdata2* = object
   val*:int
-proc implementUserdata*(t:type TestUserdata2,l:LuaState,meta:LuaMetatable) =
+TestUserdata2.implementUserdata(l,meta):
   discard nil
   meta.registerMethods:
     proc testmethod(self:var TestUserdata2,a:int):int =
