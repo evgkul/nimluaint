@@ -85,7 +85,7 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
   let cdecl = """int CFUNC(void* L){
     void* e = lua_touserdata(L,PTRINDEX);
     int rcode = INNERFUNC(e);
-    printf("HELLO FROM CLOSURE!\n");
+    //printf("HELLO FROM CLOSURE!\n");
     if(rcode==-2){
       lua_error(L);
     }

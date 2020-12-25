@@ -3,6 +3,7 @@ import macros
 when EmbedLua:
   build_lua()
 
+export lua_api
 export lua_state
 export lua_reference
 export lua_call
