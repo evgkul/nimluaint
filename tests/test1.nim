@@ -194,10 +194,10 @@ TestUserdata2.implementUserdata(l,meta):
       self.val = val
       return val]#
   meta.setIndex("testmethod"):
-    l.implementClosure proc(self:var TestUserdata2,a:int):int =
+    l.implementClosure proc(self:var TestUserdata2,a:int):(int,int) =
       let val = self.val+a
       self.val = val
-      return val
+      return (val,2)
 
 test "lua_userdata2":
   let lua = newLuaState()
