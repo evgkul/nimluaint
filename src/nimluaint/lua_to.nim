@@ -3,6 +3,7 @@ import lua_state
 import lua_reference
 import utils
 import macros
+import options
 
 proc toluaraw*(value:int,lua:LuaState) =
   lua.raw.pushinteger(value)
@@ -15,6 +16,12 @@ proc toluaraw*(value:bool,lua:LuaState) =
 proc toluaraw*(value:LuaReference,lua:LuaState) =
   assert value.lua.inner==lua.inner
   value.pushOnStack()
+
+proc toluaraw*[T](value:Option[T],lua:LuaState) =
+  if value.isSome:
+    value.unsafeGet().toluaraw(lua)
+  else:
+    lua.raw.pushnil()
 
 proc toluaraw_multi*[T:tuple](value:T,lua:LuaState):cint
 template toluaraw_multi*(value:not tuple and not LuaMultivalue,lua:LuaState):cint =
