@@ -17,7 +17,7 @@ bool.implementFromluaraw L.toboolean(pos).bool
 
 proc fromluaraw*[T](to:var Option[T],lua:LuaState,pos:var cint,max:cint) =
   let L = lua.raw
-  if pos>max or L.luatype(pos).LUA_TYPE==LNIL:
+  if pos>max or L.luatype(pos).LUA_TYPE in {LNIL,LNONE}:
     to = none[T]()
   else:
     var v:T
