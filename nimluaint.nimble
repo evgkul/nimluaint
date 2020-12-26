@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.6.1"
+version       = "0.7.0"
 author        = "evgkul"
 description   = "A mlua-inspired api for using lua with nim"
 license       = "MIT"

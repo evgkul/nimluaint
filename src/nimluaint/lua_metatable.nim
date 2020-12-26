@@ -5,7 +5,7 @@ import lua_api
 
 type LuaMetatable* = distinct LuaReference
 
-proc getOrNewTable(meta:LuaMetatable,key:string):LuaReference =
+proc getOrNewTable*(meta:LuaMetatable,key:string):LuaReference =
   let t = meta.LuaReference
   let val = t.rawget(key,LuaReference)
   if val.ltype!=LNIL:
@@ -20,3 +20,6 @@ proc index*(meta:LuaMetatable):LuaReference =
 
 proc setIndex*[T](meta:LuaMetatable,key:string,value:T) =
   meta.index.rawset(key,value)
+
+template registerMethods*(meta:LuaMetatable,methods:untyped) =
+  meta.getOrNewTable("__index").registerMethods methods

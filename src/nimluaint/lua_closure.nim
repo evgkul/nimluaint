@@ -182,13 +182,13 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
   #error("NIY",closure)
 
 
-macro registerMethods*(meta:LuaMetatable,methods:untyped) =
+macro registerMethods*(r:LuaReference,methods:untyped) =
   #echo "METHODS ",methods.treeRepr
-  let i_meta = genSym(nskLet,"meta")
+  let i_ref = genSym(nskLet,"meta")
   let i_lua = genSym(nskLet,"lua")
   var res = newStmtList quote do:
-    let `i_meta`:LuaMetatable = `meta`
-    let `i_lua`:LuaState = `i_meta`.LuaReference.lua
+    let `i_ref`:LuaReference = `r`
+    let `i_lua`:LuaState = `i_ref`.lua
   for m in methods:
     #echo "METHOD ",m.treeRepr
     m.expectKind nnkProcDef
@@ -196,7 +196,7 @@ macro registerMethods*(meta:LuaMetatable,methods:untyped) =
     res.add quote do:
       block:
         let clos = `i_lua`.implementClosure `m`
-        `i_meta`.setIndex(`name`,clos)
+        `i_ref`.rawset(`name`,clos)
         
   return quote do:
     block:
