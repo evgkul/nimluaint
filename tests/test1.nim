@@ -228,3 +228,8 @@ test "lua_option":
   let t2 = g.rawget("test2",Option[int])
   check t1==some(100500)
   check t2==none[int]()
+  let cl = lua.implementClosure proc(t:Option[int]):Option[int] =
+    return t
+  check cl.call(5,Option[int])==some(5)
+  check cl.call(none[int](),Option[int])==none[int]()
+  check cl.call(Option[int])==none[int]()
