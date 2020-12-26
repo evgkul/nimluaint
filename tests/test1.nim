@@ -12,6 +12,7 @@ import nimluaint/lua_api
 import nimluaint/lua_from
 import macros
 import strformat
+import options
 #test "can add":
 #  check add(5, 5) == 10
 
@@ -216,3 +217,13 @@ test "lua_userdata2":
   collectgarbage()
   """)
   fn1.call((udata,udata_wrong),void)
+
+test "lua_option":
+  let lua = newLuaState()
+  let L = lua.raw
+  let g = lua.globals
+  g.rawset("test",100500)
+  let t1 = g.rawget("test",Option[int])
+  let t2 = g.rawget("test2",Option[int])
+  check t1==some(100500)
+  check t2==none[int]()

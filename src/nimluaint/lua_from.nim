@@ -2,6 +2,7 @@ import utils
 import lua_api
 import lua_state
 import macros
+import options
 
 template implementFromluaraw*(ty:typedesc,code:untyped) =
   proc fromluaraw*(to{.inject.}:var ty, lua{.inject.}:LuaState, pos{.inject.}:var cint,max{.inject.}:cint) =
@@ -13,6 +14,15 @@ int.implementFromluaraw L.tointeger(pos).int
 string.implementFromluaraw L.tostring(pos)
 float.implementFromluaraw L.tonumber(pos).float
 bool.implementFromluaraw L.toboolean(pos).bool
+
+proc fromluaraw*[T](to:var Option[T],lua:LuaState,pos:var cint,max:cint) =
+  let L = lua.raw
+  if L.luatype(pos).LUA_TYPE==LNIL:
+    to = none[T]()
+  else:
+    var v:T
+    v.fromluaraw(lua,pos,max)
+    to = some(v)
 
 proc fromluaraw*[T](to:var LuaMultivalue[T],lua:LuaState,pos:var cint,max:cint) =
   type s = seq[T]
