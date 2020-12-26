@@ -12,6 +12,7 @@ template implementFromluaraw*(ty:typedesc,code:untyped) =
 int.implementFromluaraw L.tointeger(pos).int
 string.implementFromluaraw L.tostring(pos)
 float.implementFromluaraw L.tonumber(pos).float
+bool.implementFromluaraw L.toboolean(pos).bool
 
 proc fromluaraw*[T](to:var LuaMultivalue[T],lua:LuaState,pos:var cint,max:cint) =
   type s = seq[T]

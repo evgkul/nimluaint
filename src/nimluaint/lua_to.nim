@@ -10,6 +10,8 @@ proc toluaraw*(value:string,lua:LuaState) =
   discard lua.raw.pushstring(value)
 proc toluaraw*(value:float,lua:LuaState) =
   lua.raw.pushnumber(value.lua_Number)
+proc toluaraw*(value:bool,lua:LuaState) =
+  lua.raw.pushboolean(value.cint)
 proc toluaraw*(value:LuaReference,lua:LuaState) =
   assert value.lua.inner==lua.inner
   value.pushOnStack()
