@@ -5,11 +5,11 @@ import utils
 import macros
 import options
 
-proc toluaraw*(value:int,lua:LuaState) =
-  lua.raw.pushinteger(value)
+proc toluaraw*(value:SomeInteger,lua:LuaState) =
+  lua.raw.pushinteger(value.lua_Integer)
 proc toluaraw*(value:string,lua:LuaState) =
   discard lua.raw.pushstring(value)
-proc toluaraw*(value:float,lua:LuaState) =
+proc toluaraw*(value:SomeFloat,lua:LuaState) =
   lua.raw.pushnumber(value.lua_Number)
 proc toluaraw*(value:bool,lua:LuaState) =
   lua.raw.pushboolean(value.cint)

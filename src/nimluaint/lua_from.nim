@@ -1,4 +1,3 @@
-import utils
 import lua_api
 import lua_state
 import macros
@@ -10,9 +9,9 @@ template implementFromluaraw*(ty:typedesc,code:untyped) =
     to=code
     pos+=1
 
-int.implementFromluaraw L.tointeger(pos).int
+SomeInteger.implementFromluaraw (typeof(to))(L.tointeger(pos))
 string.implementFromluaraw L.tostring(pos)
-float.implementFromluaraw L.tonumber(pos).float
+SomeFloat.implementFromluaraw (typeof(to))(L.tonumber(pos))
 bool.implementFromluaraw L.toboolean(pos).bool
 
 proc fromluaraw*[T](to:var Option[T],lua:LuaState,pos:var cint,max:cint) =

@@ -222,11 +222,11 @@ test "lua_option":
   let lua = newLuaState()
   let L = lua.raw
   let g = lua.globals
-  g.rawset("test",some(100500))
+  g.rawset("test",some(100500.int32))
   g.rawset("test2",none[int]())
-  let t1 = g.rawget("test",Option[int])
+  let t1 = g.rawget("test",Option[int32])
   let t2 = g.rawget("test2",Option[int])
-  check t1==some(100500)
+  check t1==some(100500.int32)
   check t2==none[int]()
   let cl = lua.implementClosure proc(t:Option[int]):Option[int] =
     return t
