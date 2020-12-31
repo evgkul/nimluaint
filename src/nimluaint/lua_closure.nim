@@ -158,8 +158,7 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
           else:
             `body`
         when RetType is not void:
-          discard toluaraw_multi(lua_res,lua)
-          return 1
+          return toluaraw_multi(lua_res,lua)
         else:
           return 0
       except Exception as e:
