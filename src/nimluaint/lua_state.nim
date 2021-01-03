@@ -20,13 +20,14 @@ type LuaUserdataInfo* = tuple[
 
 type LuaStateObj* = object
   raw: PState
+  raw_orig:PState
   autodestroy*: bool
   typemetatables*: Table[TypeID,LuaUserdataInfo]
 
 proc `=destroy`(obj: var LuaStateObj) =
   if obj.autodestroy:
     debug "Destroying lua state ",obj.raw.repr
-    obj.raw.close()
+    obj.raw_orig.close()
     reset obj.typemetatables
 
 type LuaState* = ref LuaStateObj
@@ -37,7 +38,7 @@ template raw*(state:LuaState):PState =
 template update_raw*(state:LuaState,r:PState) =
   state.raw = r
 proc newLuaState*(raw:PState,autodestroy:bool=false):LuaState =
-  return LuaState(raw:raw,autodestroy:autodestroy)
+  return LuaState(raw:raw,raw_orig:raw,autodestroy:autodestroy)
 proc newLuaState*(openlibs:bool=true):LuaState =
   let L = newState()
   if openlibs:
