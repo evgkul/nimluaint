@@ -2,3 +2,4 @@ tests/test1.exe
 tests/test1
 tmp
 tests/coroutines
+tests/test_coroutines
