@@ -10,7 +10,7 @@ import strformat
 import lua_metatable
 var pincr {.compiletime.} = 0
 
-type InnerClosure = proc():cint {.closure,raises:[].}
+type InnerClosure = proc(L:PState):cint {.closure,raises:[].}
 type NimClosureWrapperInner = object
   inner: InnerClosure
 
@@ -84,7 +84,7 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
   let ptrindex = upvalueindex(1)
   let cdecl = """int CFUNC(void* L){
     void* e = lua_touserdata(L,PTRINDEX);
-    int rcode = INNERFUNC(e);
+    int rcode = INNERFUNC(L,e);
     //printf("HELLO FROM CLOSURE!\n");
     if(rcode==-2){
       lua_error(L);
@@ -132,9 +132,10 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
   res.add quote do:
     type RetType = `rettype`
     var luainner {.cursor.} = `lua`.inner
-    proc `inner_proc`():cint {.closure, exportc: `inner_cname`,raises:[].} =
+    proc `inner_proc`(L:PState):cint {.closure, exportc: `inner_cname`,raises:[].} =
       let lua {.inject.} = newLuaState luainner
-      let L = lua.raw
+      let oldraw = lua.raw
+      lua.update_raw(L)
       try:
         var `i_lua_args` = default `args_tuple`
         var lua_pos = 1.cint
@@ -172,6 +173,8 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
           errmsg.add(e.getStackTrace().replace("\n","\n  "))
         discard L.pushstring(errmsg)
         return -2
+      finally:
+        lua.update_raw oldraw
     proc `cname_ident`(L:`pstate`):cint {.cdecl, importc, codegenDecl: `cdecl`.}
     `pushc`(newLuaState luainner,`cname_ident`,`inner_proc`)
   return quote do:
