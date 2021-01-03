@@ -15,8 +15,8 @@ type LuaUserdataImpl* = concept type t
 proc pushUserdataMetatable*(lua:LuaState,ty:typedesc) =
   let id = getTypeID ty
   let L = lua.raw
-  if lua.inner.typemetatables.contains id:
-    let metainfo = lua.inner.typemetatables[id]
+  if lua.typemetatables.contains id:
+    let metainfo = lua.typemetatables[id]
     L.rawgeti(LUA_REGISTRYINDEX,metainfo.luaref)
   else:
     L.newtable()
@@ -26,7 +26,7 @@ proc pushUserdataMetatable*(lua:LuaState,ty:typedesc) =
     ty.buildMetatable(lua,meta.LuaMetatable)
     meta.autodestroy = false
     let metaid = meta.rawref
-    lua.inner.typemetatables[id]=(metaid,metaptr)
+    lua.typemetatables[id]=(metaid,metaptr)
     let metapos = L.gettop()
     proc destroy_udata(L:PState):cint {.cdecl.} =
       #echo "METATABLE: DESTROYING ",$ty
@@ -57,7 +57,7 @@ proc fromluaraw*[T:LuaUserdataImpl](to:var ptr T,lua:LuaState,pos:var cint,max:c
     if L.getmetatable(pos)==0:
       luaInvalidType($T,"unknown userdata without metatable")
     let metaptr = L.topointer(start+1)
-    let exp = lua.inner.typemetatables.getOrDefault id
+    let exp = lua.typemetatables.getOrDefault id
     if metaptr!=exp.metaptr:
       luaInvalidType($T,"unknown userdata")
     to = cast[ptr T](L.topointer pos)

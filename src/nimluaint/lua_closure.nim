@@ -131,9 +131,8 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
 
   res.add quote do:
     type RetType = `rettype`
-    var luainner {.cursor.} = `lua`.inner
+    let lua {.cursor,inject.} = `lua`
     proc `inner_proc`(L:PState):cint {.closure, exportc: `inner_cname`,raises:[].} =
-      let lua {.inject.} = newLuaState luainner
       let oldraw = lua.raw
       lua.update_raw(L)
       try:
@@ -176,7 +175,7 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
       finally:
         lua.update_raw oldraw
     proc `cname_ident`(L:`pstate`):cint {.cdecl, importc, codegenDecl: `cdecl`.}
-    `pushc`(newLuaState luainner,`cname_ident`,`inner_proc`)
+    `pushc`(lua,`cname_ident`,`inner_proc`)
   return quote do:
     block:
       {.warning[GcUnsafe]:off.}

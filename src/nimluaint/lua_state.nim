@@ -18,33 +18,26 @@ type LuaUserdataInfo* = tuple[
   metaptr:pointer
 ]
 
-type LuaStateInnerObj* = object
+type LuaStateObj* = object
   raw: PState
   autodestroy*: bool
   typemetatables*: Table[TypeID,LuaUserdataInfo]
 
-proc `=destroy`(obj: var LuaStateInnerObj) =
+proc `=destroy`(obj: var LuaStateObj) =
   if obj.autodestroy:
     debug "Destroying lua state ",obj.raw.repr
     obj.raw.close()
     reset obj.typemetatables
 
-type LuaStateInner* = ref LuaStateInnerObj
-LuaStateInner.exportReadonly raw
+type LuaState* = ref LuaStateObj
 
-type LuaState* = object
-#  raw: PState
-  inner: LuaStateInner
 #LuaState.exportReadonly raw
 template raw*(state:LuaState):PState =
-  state.inner.raw
+  state[].raw
 template update_raw*(state:LuaState,r:PState) =
-  state.inner.raw = r
-LuaState.exportReadonly inner
-proc newLuaState*(inner:LuaStateInner):LuaState =
-  return LuaState(inner:inner)
+  state.raw = r
 proc newLuaState*(raw:PState,autodestroy:bool=false):LuaState =
-  return LuaState(inner:LuaStateInner(raw:raw,autodestroy:autodestroy))
+  return LuaState(raw:raw,autodestroy:autodestroy)
 proc newLuaState*(openlibs:bool=true):LuaState =
   let L = newState()
   if openlibs:

@@ -14,7 +14,7 @@ proc toluaraw*(value:SomeFloat,lua:LuaState) =
 proc toluaraw*(value:bool,lua:LuaState) =
   lua.raw.pushboolean(value.cint)
 proc toluaraw*(value:LuaReference,lua:LuaState) =
-  assert value.lua.inner==lua.inner
+  assert value.lua==lua
   value.pushOnStack()
 
 proc toluaraw*[T](value:Option[T],lua:LuaState) =
