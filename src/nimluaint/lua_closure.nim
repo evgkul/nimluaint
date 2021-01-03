@@ -131,8 +131,9 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
 
   res.add quote do:
     type RetType = `rettype`
-    let lua {.cursor,inject.} = `lua`
+    let lua {.cursor.} = `lua`
     proc `inner_proc`(L:PState):cint {.closure, exportc: `inner_cname`,raises:[].} =
+      let lua {.inject.} = lua
       let oldraw = lua.raw
       lua.update_raw(L)
       try:
