@@ -28,6 +28,11 @@ template toluaraw_multi*(value:not tuple and not LuaMultivalue,lua:LuaState):cin
   toluaraw value,lua
   1.cint
 
+proc toluaraw_multi*[T](value: LuaMultivalue[T],lua:LuaState):cint =
+  for v in value:
+    v.toluaraw lua
+  return value.len.cint
+
 macro toluaraw_multi_tuple_impl(value:tuple,lua:LuaState) =
   result = newStmtList()
   let ty = value.getType()

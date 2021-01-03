@@ -144,8 +144,8 @@ proc pushthread*(L: PState): cint {.ilua.}
 proc getglobal*(L: PState; variable: cstring) {.ilua.}
 proc gettable*(L: PState; idx: cint) {.ilua.}
 proc getfield*(L: PState; idx: cint; k: cstring) {.ilua.}
-proc rawget*(L: PState; idx: cint) {.ilua.}
-proc rawgeti*(L: PState; idx: cint; n: cint) {.ilua.}
+proc rawget*(L: PState; idx: cint):cint {.ilua,discardable.}
+proc rawgeti*(L: PState; idx: cint; n: lua_Integer):cint {.ilua,discardable.}
 proc rawgetp*(L: PState; idx: cint; p: pointer) {.ilua.}
 proc createtable*(L: PState; narr: cint; nrec: cint) {.ilua.}
 when UseLuaVersion=="luajit":
