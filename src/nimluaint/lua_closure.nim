@@ -131,9 +131,9 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
 
   res.add quote do:
     type RetType = `rettype`
-    let lua {.cursor.} = `lua`
+    let lua {.cursor,inject.} = `lua`
     proc `inner_proc`(L:PState):cint {.closure, exportc: `inner_cname`,raises:[].} =
-      let lua {.inject.} = lua
+      let lua2 = lua
       let oldraw = lua.raw
       lua.update_raw(L)
       try:
@@ -179,7 +179,7 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
     `pushc`(lua,`cname_ident`,`inner_proc`)
   return quote do:
     block:
-      {.warning[GcUnsafe]:off.}
+      #{.warning[GcUnsafe]:off.}
       `res`
   #error("NIY",closure)
 

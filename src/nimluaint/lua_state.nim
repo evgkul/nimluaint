@@ -1,4 +1,5 @@
 import lua_api
+import lua_defines
 import utils
 import logging
 import strformat
@@ -43,4 +44,9 @@ proc newLuaState*(openlibs:bool=true):LuaState =
   let L = newState()
   if openlibs:
     L.openlibs()
+    when BuildLuaUTF8:
+      proc luaopen_utf8(L: lua_State) {.importc,cdecl.}
+      L.protectStack:
+        L.luaopen_utf8()
+        L.setglobal("utf8")
   return newLuaState(L,true)

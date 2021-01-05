@@ -14,7 +14,7 @@ macro build_lua*() =
     stmts.add quote do:
       {.compile: `path`.}
   result = quote do:
-    {.push passc:"-I nimluaint/lua-5.4.2/src".}
+    #{.push passc:"-I nimluaint/lua-5.4.2/src".}
     `stmts`
-    {.pop.}
+    #{.pop.}
   #echo "COMPILE: ",result.repr

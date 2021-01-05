@@ -1,10 +1,10 @@
 import lua_api
 
 type TypeID* = pointer
-
-proc getTypeID*(t:typedesc):TypeID =
-  var typeid {.global.} = $t
-  return typeid.addr.pointer
+proc getTypeID*(t:typedesc):TypeID {.gcsafe.} =
+  #let typeid {.global.} = $t
+  #return typeid.unsafeAddr.pointer
+  return getTypeInfo(default t)
 
 template protectStack*(L:PState,stack_top:untyped,code:untyped) =
   let stack_top = L.gettop()

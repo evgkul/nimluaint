@@ -11,7 +11,7 @@ when UseLuaVersion=="lua5.4":
 elif UseLuaVersion=="luajit":
   include luajit_consts
 else:
-  {.error: "Unknown lua version".}
+  {.error: "Unknown lua version: "&UseLuaVersion.}
 
 #{.deadCodeElim: on.}
 #when defined(useLuaJIT):
