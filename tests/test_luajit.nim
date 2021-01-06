@@ -10,7 +10,7 @@ import strformat
 test "luajit_1":
   let lua = newLuaState()
   let tref = expandMacros:
-    lua.implementLuajitClosure:
+    lua.implementLuajitFunction:
       proc test(a:string,b,c,d:int) =
         echo "HelloFromLuajit " & $(a,b,c,d)
   let raw = lua.load("return io.open('tmp/testtttt','w')").call((),LuaReference)

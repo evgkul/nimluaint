@@ -46,7 +46,7 @@ template checkToluajit*(t: type ToLuajitType) = discard
 
 var ids {.compiletime.}:int = 0
 
-proc bindLuajitClosure*(lua:LuaState,rawname:string,args:openarray[LuajitArgDef]):LuaReference =
+proc bindLuajitFunction*(lua:LuaState,rawname:string,args:openarray[LuajitArgDef]):LuaReference =
   var cargs = args.mapIt(&"{it.typename} {it.name}").join(", ")
 
   
@@ -80,7 +80,7 @@ end"""
   let datatable = lua.newtable()
   return lua.load(code).call(datatable,LuaReference)
 
-macro implementLuajitClosure*(lua:LuaState,closure:untyped):LuaReference =
+macro implementLuajitFunction*(lua:LuaState,closure:untyped):LuaReference =
   var res = newStmtList()
   let id = ids
   ids+=1
@@ -127,4 +127,4 @@ macro implementLuajitClosure*(lua:LuaState,closure:untyped):LuaReference =
     block:
       `res`
       `p`
-      `lua`.bindLuajitClosure(`rawpname`,`argdefs`)
+      `lua`.bindLuajitFunction(`rawpname`,`argdefs`)
