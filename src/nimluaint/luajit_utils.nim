@@ -22,11 +22,12 @@ type LuajitArgDef* = object
   name*: string
   typename*: string
   code*: string
+  metatable*: LuaReference
 
 type ToLuajitType* {.explain.} = concept x, type t
   t.nimSideType is typedesc
   #t.luaSideType is string
-  t.genLuaDef(string) is LuajitArgDef
+  t.genLuaDef(LuaState,string) is LuajitArgDef
   #t.genLuaCheck(string) is string
   #x.toluajit() is t.nimSideType
   t.tonim(t.nimSideType) is t
@@ -40,14 +41,14 @@ proc genTCheck(argname:string,ty:string):string =
 
 template nimSideType*(t:type int):typedesc = cint
 #template luaSideType*(t:type int):string = "int"
-proc genLuaDef*(t:type int,argname:string):LuajitArgDef = 
+proc genLuaDef*(t:type int,lua:LuaState,argname:string):LuajitArgDef = 
   return LuajitArgDef(name:argname,typename:"int",code:genTCheck(argname,"number"))
 #template toluajit*(val:int):cint = val.cint
 template tonim*(t:type int,val:cint):int = val.int
 
 template nimSideType*(t:type string):typedesc = cstring
 #template luaSideType*(t:type string):string = "const char *"
-proc genLuaDef*(t:type string,argname:string):LuajitArgDef = 
+proc genLuaDef*(t:type string,lua:LuaState,argname:string):LuajitArgDef = 
   return LuajitArgDef(name:argname,typename:"const char *",code:genTCheck(argname,"string"))
 #template toluajit*(val:string):cint = val.cint
 template tonim*(t:type string,val:cstring):string = $val
@@ -58,6 +59,7 @@ template checkToluajit*(t: type ToLuajitType) = discard
 var ids {.compiletime.}:int = 0
 
 proc bindLuajitFunction*(lua:LuaState,rawname:string,args:openarray[LuajitArgDef]):LuaReference =
+  let datatable = lua.newtable()
   var cargs = args.mapIt(&"{it.typename} {it.name}").join(", ")
   var code = """local data = ({...})[1]
 local ffi = require("ffi")
@@ -85,13 +87,13 @@ local last_error = ffi.new("{rawname}_lasterror*",data.lastErrorPtr)
   end
 end"""
   #echo "LUACODE ",code
-  let datatable = lua.newtable()
   datatable.rawset("lastErrorPtr",last_error.addr.pointer)
   return lua.load(code).call(datatable,LuaReference)
 
 macro implementLuajitFunction*(lua:LuaState,closure:untyped):LuaReference =
   let i_buildErrorMsg = bindSym "buildErrorMsg"
   let i_lastError = bindSym "last_error"
+  let i_lua = ident "lua"
   var res = newStmtList()
   let id = ids
   ids+=1
@@ -124,7 +126,7 @@ macro implementLuajitFunction*(lua:LuaState,closure:untyped):LuaReference =
         let `name`:`ty` = `ty`.tonim(`name`)
       let namestr = name.strVal
       argdefs.add quote do:
-        `ty`.genLuaDef(`namestr`)
+        `ty`.genLuaDef(`i_lua`,`namestr`)
   procbody.add body
   let procbody_wrapped = quote do:
     result = 1
@@ -146,4 +148,5 @@ macro implementLuajitFunction*(lua:LuaState,closure:untyped):LuaReference =
     block:
       `res`
       `p`
-      `lua`.bindLuajitFunction(`rawpname`,`argdefs`)
+      let `i_lua` = `lua`
+      `i_lua`.bindLuajitFunction(`rawpname`,`argdefs`)
