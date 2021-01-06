@@ -14,17 +14,25 @@ type LuajitArgDef* = object
 
 type ToLuajitType* {.explain.} = concept x, type t
   t.nimSideType is typedesc
-  t.luaSideType is string
+  #t.luaSideType is string
   t.genLuaDef(string) is LuajitArgDef
-  x.toluajit() is t.nimSideType
+  #x.toluajit() is t.nimSideType
   t.tonim(t.nimSideType) is t
 
 template nimSideType*(t:type int):typedesc = cint
-template luaSideType*(t:type int):string = "int"
+#template luaSideType*(t:type int):string = "int"
 proc genLuaDef*(t:type int,argname:string):LuajitArgDef = 
   return LuajitArgDef(name:argname,typename:"int")
-template toluajit*(val:int):cint = val.cint
+#template toluajit*(val:int):cint = val.cint
 template tonim*(t:type int,val:cint):int = val.int
+
+template nimSideType*(t:type string):typedesc = cstring
+#template luaSideType*(t:type string):string = "const char *"
+proc genLuaDef*(t:type string,argname:string):LuajitArgDef = 
+  return LuajitArgDef(name:argname,typename:"const char *")
+#template toluajit*(val:string):cint = val.cint
+template tonim*(t:type string,val:cstring):string = $val
+
 
 template checkToluajit*(t: type ToLuajitType) = discard
 

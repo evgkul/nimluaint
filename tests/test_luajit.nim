@@ -11,6 +11,7 @@ test "luajit_1":
   let lua = newLuaState()
   let tref = expandMacros:
     lua.implementLuajitClosure:
-      proc test(a:int,b,c,d:int) =
+      proc test(a:string,b,c,d:int) =
         echo "HelloFromLuajit " & $(a,b,c,d)
-  tref.call((1,2,3,4),void)
+  let raw = lua.load("return io.open('tmp/testtttt','w')").call((),LuaReference)
+  tref.call((raw,2,3,4),void)
