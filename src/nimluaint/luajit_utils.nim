@@ -50,14 +50,21 @@ proc genLuaDef*(t:type string,lua:LuaState,argname:string):LuajitArgDef =
 #template toluajit*(val:string):cint = val.cint
 template tonim*(t:type string,val:cstring):string = $val
 
+
 template nimSideType*[T:LuaUserdataImpl](t: type T):typedesc = ptr T
-proc genLuaDef*[T:LuaUserdataImpl](t: type T,lua:LuaState,argname:string):LuajitArgDef =
-  let meta = lua.getUserdataMetatable T
+template nimSideType*[T:ptr LuaUserdataImpl](t: type T):typedesc = T
+
+proc genLuaDef*[T:LuaUserdataImpl|ptr LuaUserdataImpl](t: type T,lua:LuaState,argname:string):LuajitArgDef =
+  when T is ptr:
+    let meta = lua.getUserdataMetatable typeof( (default T)[] )
+  else:
+    let meta = lua.getUserdataMetatable T
   let code = &"""if debug.getmetatable({argname})~=metatable_{argname} then
   error("Invalid userdata type!")
 end"""
   return LuajitArgDef(name:argname,typename:"void *",code:code,metatable:meta.LuaReference)
 template tonim*[T:LuaUserdataImpl](t:type T,val:ptr T):T = val[]
+template tonim*[T:ptr LuaUserdataImpl](t:type T,val:T):T = val
 
 template checkToluajit*(t: type ToLuajitType) = discard
 
@@ -103,7 +110,7 @@ local last_error = ffi.new("{rawname}_lasterror*",data.lastErrorPtr)
     error(errmsg)
   end
 end"""
-  echo "LUACODE ",code
+  #echo "LUACODE ",code
   datatable.rawset("lastErrorPtr",last_error.addr.pointer)
   return lua.load(code).call(datatable,LuaReference)
 

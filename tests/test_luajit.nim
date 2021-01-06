@@ -68,7 +68,7 @@ test "luajit_udata":
   let globals = lua.globals
   let u1 = TestUserdata(a:100500)
   let t1 = lua.implementLuajitFunction:
-    proc test(u:TestUserdata) =
+    proc test(u:ptr TestUserdata) =
       echo "UDATA_VALUE ",u.a
   t1.call(u1,void)
   
