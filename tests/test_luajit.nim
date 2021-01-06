@@ -33,3 +33,28 @@ test "luajit_speed":
   let fun2 = lua.implementLuajitFunction:
     proc testnative(val:int) =
       test[]+=val
+  let g = lua.globals()
+  g.rawset("fun1",fun1)
+  g.rawset("fun2",fun2)
+  let i1 = lua.load("""
+    function test1()
+      local b = os.clock()
+      for i = 1,1000000 do
+        fun1(1)
+      end
+      local a = os.clock()
+      print("LUA API time",a-b)
+    end
+
+    function test2()
+      local b = os.clock()
+      for i = 1,1000000 do
+        fun2(-1)
+      end
+      local a = os.clock()
+      print("FFI time",a-b)
+    end
+    test1()
+    test2()
+  """)
+  i1.call((),void)

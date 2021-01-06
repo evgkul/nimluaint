@@ -79,13 +79,13 @@ local cfun = ffi.C.{rawname}
 {transforms}
 --CALLING FUNCTION
   local callres = cfun({luaargs})
-  print("CALLRES",callres)
+  --print("CALLRES",callres)
   if not callres then
     local errmsg = ffi.string(last_error.cstr)
     error(errmsg)
   end
 end"""
-  echo "LUACODE ",code
+  #echo "LUACODE ",code
   let datatable = lua.newtable()
   datatable.rawset("lastErrorPtr",last_error.addr.pointer)
   return lua.load(code).call(datatable,LuaReference)
