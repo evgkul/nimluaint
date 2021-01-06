@@ -27,7 +27,9 @@ var ids {.compiletime.}:int = 0
 
 proc bindLuajitFunction*(lua:LuaState,rawname:string,args:openarray[LuajitArgDef]):LuaReference =
   let datatable = lua.newtable()
-  var cargs = args.mapIt(&"{it.typename} {it.name}").join(", ")
+  let cargs = args.mapIt(&"{it.typename} {it.name}").join(", ")
+  let luaargs = args.mapIt(it.name).join(", ")
+  let transforms = args.mapIt(&"--PROCESSING {it.name}\n{it.code}").join("\n")
   var load_metatables_seq:seq[string]
   for arg in args:
     if arg.metatable!=nil:
@@ -52,10 +54,8 @@ typedef struct {structbody} {rawname}_lasterror;
 bool {rawname}({cargs});
 ]]
 local last_error = ffi.new("{rawname}_lasterror*",data.lastErrorPtr)
-"""
-  let luaargs = args.mapIt(it.name).join(", ")
-  let transforms = args.mapIt(&"--PROCESSING {it.name}\n{it.code}").join("\n")
-  code.add &"""return function({luaargs})
+
+return function({luaargs})
 {transforms}
 --CALLING FUNCTION
   local callres = ffi.C.{rawname}({luaargs})
