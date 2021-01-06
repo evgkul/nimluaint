@@ -16,6 +16,8 @@ proc toluaraw*(value:bool,lua:LuaState) =
 proc toluaraw*(value:LuaReference,lua:LuaState) =
   assert value.lua==lua
   value.pushOnStack()
+proc toluaraw*(value:pointer,lua:LuaState) =
+  lua.raw.pushlightuserdata(value)
 
 proc toluaraw*[T](value:Option[T],lua:LuaState) =
   if value.isSome:
