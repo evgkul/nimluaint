@@ -65,7 +65,7 @@ proc bindLuajitFunction*(lua:LuaState,rawname:string,args:openarray[LuajitArgDef
 local ffi = require("ffi")
 """
   code.add &"""ffi.cdef[[
-void {rawname}({cargs});
+bool {rawname}({cargs});
 ]]
 local cfun = ffi.C.{rawname}
 """
@@ -74,7 +74,8 @@ local cfun = ffi.C.{rawname}
   code.add &"""return function({luaargs})
 {transforms}
 --CALLING FUNCTION
-  cfun({luaargs})
+  local callres = cfun({luaargs})
+  print("CALLRES",callres)
 end"""
   echo "LUACODE ",code
   let datatable = lua.newtable()
@@ -96,7 +97,7 @@ macro implementLuajitFunction*(lua:LuaState,closure:untyped):LuaReference =
   var body = closure.body
   let rawpname = &"luajit_closure_{pname}_{id}"
   #echo "params ",params.treeRepr
-  var closuredefs:seq[NimNode] = @[newEmptyNode()]
+  var closuredefs:seq[NimNode] = @[ident "cint"]
   var procbody = newStmtList()
   var argdefs = quote do:
     []
@@ -115,14 +116,19 @@ macro implementLuajitFunction*(lua:LuaState,closure:untyped):LuaReference =
       argdefs.add quote do:
         `ty`.genLuaDef(`namestr`)
   procbody.add body
+  let procbody_wrapped = quote do:
+    result = 1
+    try:
+      `procbody`
+    except Exception as e:
+      result = 0
+      echo "Exception!"
   let codegen = &"$# $#$#"
   let procpragmas = quote do:
-    {.exportc: `rawpname`,codegenDecl: `codegen`.}
-  let p = newProc(ident rawpname,closuredefs,procbody,pragmas=procpragmas)
-  echo "PROC ",p.repr
-  
-  
-  echo "ARGDEF ",argdefs.treeRepr
+    {.exportc: `rawpname`,codegenDecl: `codegen`,raises:[].}
+  let p = newProc(ident rawpname,closuredefs,procbody_wrapped,pragmas=procpragmas)
+  #echo "PROC ",p.repr
+  #echo "ARGDEF ",argdefs.treeRepr
   return quote do:
     block:
       `res`
