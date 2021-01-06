@@ -9,6 +9,7 @@ import strformat
 
 test "luajit_1":
   let lua = newLuaState()
-  lua.implementLuajitClosure:
-    proc test(a:int,b,c,d:int) =
-      echo "HelloFromLuajit"
+  expandMacros:
+    lua.implementLuajitClosure:
+      proc test(a:int,b,c,d:int) =
+        echo "HelloFromLuajit"
