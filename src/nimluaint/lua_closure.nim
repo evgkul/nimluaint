@@ -8,6 +8,7 @@ import macros
 import strutils
 import strformat
 import lua_metatable
+import utils
 var pincr {.compiletime.} = 0
 
 type InnerClosure = proc(L:PState):cint {.closure,raises:[].}

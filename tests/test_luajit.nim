@@ -24,3 +24,12 @@ test "luajit_1":
         #echo "HelloFromLuajit " & $(a,b,c,d)
   expect LuaCallError:
     tref2.call(("E2",3,4,5),void)
+test "luajit_speed":
+  let lua = newLuaState()
+  var test: ref int
+  new test
+  let fun1 = lua.implementClosure proc(val:int) =
+    test[]+=val
+  let fun2 = lua.implementLuajitFunction:
+    proc testnative(val:int) =
+      test[]+=val
