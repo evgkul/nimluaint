@@ -3,7 +3,6 @@ import logging
 import nimluaint
 import nimluaint/lua_api
 import nimluaint/lua_from
-import nimluaint/luajit_utils
 import macros
 import strformat
 
