@@ -98,6 +98,7 @@ macro implementLuajitClosure*(lua:LuaState,closure:untyped):LuaReference =
       let namestr = name.strVal
       argdefs.add quote do:
         `ty`.genLuaDef(`namestr`)
+  procbody.add body
   let codegen = &"$# $#$#"
   let procpragmas = quote do:
     {.exportc: `rawpname`,codegenDecl: `codegen`.}

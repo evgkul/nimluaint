@@ -12,4 +12,5 @@ test "luajit_1":
   let tref = expandMacros:
     lua.implementLuajitClosure:
       proc test(a:int,b,c,d:int) =
-        echo "HelloFromLuajit"
+        echo "HelloFromLuajit " & $(a,b,c,d)
+  tref.call((1,2,3,4),void)
