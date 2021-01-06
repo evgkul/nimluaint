@@ -1,10 +1,12 @@
 import lua_api
 import lua_userdata
+import lua_call
 import lua_reference
 import lua_state
 import macros
 import strformat
 import strutils
+import sequtils
 type LuajitArgDef* = object
   name*: string
   typename*: string
@@ -28,20 +30,41 @@ template checkToluajit*(t: type ToLuajitType) = discard
 
 var ids {.compiletime.}:int = 0
 
-proc bindLuajitClosure*(lua:LuaState,rawname:string,args:openarray[LuajitArgDef]) =
-  var cargs:seq[string] = @[]
-  for arg in args:
-    cargs.add &"{arg.typename} {arg.name}"
+proc bindLuajitClosure*(lua:LuaState,rawname:string,args:openarray[LuajitArgDef]):LuaReference =
+  var cargs = args.mapIt(&"{it.typename} {it.name}").join(", ")
+
   
-  let code = """local data = ({...})[0]
+  #[let code = """local data = ({...})[0]
   local ffi = require("ffi")
   ffi.cdef([[
     void FNAME(ARGS);
   ]])
-""".replace("FNAME",rawname).replace("ARGS",cargs.join(", "))
+  local cfun = ffi.C.FNAME
+  return function(LUAARGS)
+    TRANSFORMARGS
+    cfun()
+  end
+""".replace("FNAME",rawname).replace("ARGS",cargs.join(", "))]#
+  var code = """local data = ({...})[1]
+local ffi = require("ffi")
+"""
+  code.add &"""ffi.cdef[[
+void {rawname}({cargs});
+]]
+local cfun = ffi.C.{rawname}
+"""
+  let luaargs = args.mapIt(it.name).join(", ")
+  let transforms = args.mapIt(&"--TRANSFORMING {it.name}\n{it.code}").join("\n")
+  code.add &"""return function({luaargs})
+{transforms}
+--CALLING FUNCTION
+  cfun({luaargs})
+end"""
   echo "LUACODE ",code
+  let datatable = lua.newtable()
+  return lua.load(code).call(datatable,LuaReference)
 
-macro implementLuajitClosure*(lua:LuaState,closure:untyped) =
+macro implementLuajitClosure*(lua:LuaState,closure:untyped):LuaReference =
   var res = newStmtList()
   let id = ids
   ids+=1
@@ -75,9 +98,9 @@ macro implementLuajitClosure*(lua:LuaState,closure:untyped) =
       let namestr = name.strVal
       argdefs.add quote do:
         `ty`.genLuaDef(`namestr`)
-  
+  let codegen = &"$# $#$#"
   let procpragmas = quote do:
-    {.exportc,cdecl.}
+    {.exportc: `rawpname`,codegenDecl: `codegen`.}
   let p = newProc(ident rawpname,closuredefs,procbody,pragmas=procpragmas)
   echo "PROC ",p.repr
   

@@ -1,0 +1,1 @@
+nim c -r -d:UseLuaVersion:luajit --passl:"$PWD/tmp/libluajit.a -lm -Wl,-E" --passc:"-rdynamic -Wl,-E" tests/test_luajit
