@@ -53,7 +53,10 @@ template tonim*(t:type string,val:cstring):string = $val
 template nimSideType*[T:LuaUserdataImpl](t: type T):typedesc = ptr T
 proc genLuaDef*[T:LuaUserdataImpl](t: type T,lua:LuaState,argname:string):LuajitArgDef =
   let meta = lua.getUserdataMetatable T
-  return LuajitArgDef(name:argname,typename:"void *",code:"",metatable:meta.LuaReference)
+  let code = &"""if debug.getmetatable({argname})~=metatable_{argname} then
+  error("Invalid userdata type!")
+end"""
+  return LuajitArgDef(name:argname,typename:"void *",code:code,metatable:meta.LuaReference)
 template tonim*[T:LuaUserdataImpl](t:type T,val:ptr T):T = val[]
 
 template checkToluajit*(t: type ToLuajitType) = discard
@@ -63,6 +66,14 @@ var ids {.compiletime.}:int = 0
 proc bindLuajitFunction*(lua:LuaState,rawname:string,args:openarray[LuajitArgDef]):LuaReference =
   let datatable = lua.newtable()
   var cargs = args.mapIt(&"{it.typename} {it.name}").join(", ")
+  var load_metatables_seq:seq[string]
+  for arg in args:
+    if arg.metatable!=nil:
+      let key = "metatable_"&arg.name
+      datatable.rawset(key,arg.metatable)
+      load_metatables_seq.add &"local {key} = data['{key}']"
+  let load_metatables = load_metatables_seq.join("\n")
+
   var code = """local data = ({...})[1]
 local ffi = require("ffi")
 """
@@ -70,14 +81,18 @@ local ffi = require("ffi")
   char * cstr;
   void * nimstr;
   }"""
-  code.add &"""ffi.cdef[[
+  code.add &"""
+--LOADING METATABLES
+{load_metatables}
+--FINISHED LOADING METATABLES
+ffi.cdef[[
 typedef struct {structbody} {rawname}_lasterror;
 bool {rawname}({cargs});
 ]]
 local last_error = ffi.new("{rawname}_lasterror*",data.lastErrorPtr)
 """
   let luaargs = args.mapIt(it.name).join(", ")
-  let transforms = args.mapIt(&"--TRANSFORMING {it.name}\n{it.code}").join("\n")
+  let transforms = args.mapIt(&"--PROCESSING {it.name}\n{it.code}").join("\n")
   code.add &"""return function({luaargs})
 {transforms}
 --CALLING FUNCTION
@@ -88,7 +103,7 @@ local last_error = ffi.new("{rawname}_lasterror*",data.lastErrorPtr)
     error(errmsg)
   end
 end"""
-  #echo "LUACODE ",code
+  echo "LUACODE ",code
   datatable.rawset("lastErrorPtr",last_error.addr.pointer)
   return lua.load(code).call(datatable,LuaReference)
 
