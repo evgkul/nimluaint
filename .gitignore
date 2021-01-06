@@ -3,3 +3,4 @@ tests/test1
 tmp
 tests/coroutines
 tests/test_coroutines
+tests/test_luajit
