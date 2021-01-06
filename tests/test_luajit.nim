@@ -14,4 +14,6 @@ test "luajit_1":
       proc test(a:string,b,c,d:int) =
         echo "HelloFromLuajit " & $(a,b,c,d)
   let raw = lua.load("return io.open('tmp/testtttt','w')").call((),LuaReference)
-  tref.call((raw,2,3,4),void)
+  tref.call(("EEEE",2,3,4),void)
+  expect LuaCallError:
+    tref.call((raw,2,3,4),void)
