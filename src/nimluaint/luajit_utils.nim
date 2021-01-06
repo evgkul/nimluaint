@@ -71,14 +71,13 @@ typedef struct {structbody} {rawname}_lasterror;
 bool {rawname}({cargs});
 ]]
 local last_error = ffi.new("{rawname}_lasterror*",data.lastErrorPtr)
-local cfun = ffi.C.{rawname}
 """
   let luaargs = args.mapIt(it.name).join(", ")
   let transforms = args.mapIt(&"--TRANSFORMING {it.name}\n{it.code}").join("\n")
   code.add &"""return function({luaargs})
 {transforms}
 --CALLING FUNCTION
-  local callres = cfun({luaargs})
+  local callres = ffi.C.{rawname}({luaargs})
   --print("CALLRES",callres)
   if not callres then
     local errmsg = ffi.string(last_error.cstr)
