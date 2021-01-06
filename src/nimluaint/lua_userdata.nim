@@ -38,6 +38,10 @@ proc pushUserdataMetatable*(lua:LuaState,ty:typedesc) =
     L.pushcfunction destroy_udata
     L.rawset metapos
 
+proc getUserdataMetatable*(lua:LuaState,ty:typedesc):LuaMetatable =
+  lua.pushUserdataMetatable ty
+  return lua.popReference().LuaMetatable
+
 proc toluaraw*[T:LuaUserdataImpl](value:T,lua:LuaState) =
   let L = lua.raw
   let size = sizeof T

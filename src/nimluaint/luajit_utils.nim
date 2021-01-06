@@ -26,11 +26,8 @@ type LuajitArgDef* = object
 
 type ToLuajitType* {.explain.} = concept x, type t
   t.nimSideType is typedesc
-  #t.luaSideType is string
   t.genLuaDef(LuaState,string) is LuajitArgDef
-  #t.genLuaCheck(string) is string
-  #x.toluajit() is t.nimSideType
-  t.tonim(t.nimSideType) is t
+  #t.tonim(t.nimSideType) is typedesc # Not working
 
 proc genTCheck(argname:string,ty:string):string =
   return &"""
@@ -53,6 +50,11 @@ proc genLuaDef*(t:type string,lua:LuaState,argname:string):LuajitArgDef =
 #template toluajit*(val:string):cint = val.cint
 template tonim*(t:type string,val:cstring):string = $val
 
+template nimSideType*[T:LuaUserdataImpl](t: type T):typedesc = ptr T
+proc genLuaDef*[T:LuaUserdataImpl](t: type T,lua:LuaState,argname:string):LuajitArgDef =
+  let meta = lua.getUserdataMetatable T
+  return LuajitArgDef(name:argname,typename:"void *",code:"",metatable:meta.LuaReference)
+template tonim*[T:LuaUserdataImpl](t:type T,val:ptr T):T = val[]
 
 template checkToluajit*(t: type ToLuajitType) = discard
 
