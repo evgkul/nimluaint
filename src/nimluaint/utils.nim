@@ -1,4 +1,6 @@
 import lua_api
+import strformat
+import strutils
 
 type TypeID* = pointer
 proc getTypeID*(t:typedesc):TypeID {.gcsafe.} =
@@ -16,4 +18,13 @@ template protectStack*(L:PState,code:untyped) = L.protectStack(stack_top,code)
 
 template exportReadonly*(ty:typedesc,name:untyped) =
   template name*(obj:ty):auto = obj.name
-  
+
+proc buildErrorMsg*(e:ref Exception):string =
+  var errmsg = ""
+  errmsg.add e.name
+  errmsg.add ": "
+  errmsg.add e.msg
+  when compileOption("stacktrace"):
+    errmsg.add("\n  ")
+    errmsg.add(e.getStackTrace().replace("\n","\n  "))
+  return errmsg

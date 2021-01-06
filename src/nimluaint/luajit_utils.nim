@@ -3,10 +3,21 @@ import lua_userdata
 import lua_call
 import lua_reference
 import lua_state
+import lua_rawtable
 import macros
 import strformat
 import strutils
 import sequtils
+import utils
+
+
+type LuaLastError = object
+  cstr: cstring
+  nimstr: ref string
+
+var last_error {.threadvar.}:LuaLastError 
+new(last_error.nimstr)
+
 type LuajitArgDef* = object
   name*: string
   typename*: string
@@ -48,25 +59,18 @@ var ids {.compiletime.}:int = 0
 
 proc bindLuajitFunction*(lua:LuaState,rawname:string,args:openarray[LuajitArgDef]):LuaReference =
   var cargs = args.mapIt(&"{it.typename} {it.name}").join(", ")
-
-  
-  #[let code = """local data = ({...})[0]
-  local ffi = require("ffi")
-  ffi.cdef([[
-    void FNAME(ARGS);
-  ]])
-  local cfun = ffi.C.FNAME
-  return function(LUAARGS)
-    TRANSFORMARGS
-    cfun()
-  end
-""".replace("FNAME",rawname).replace("ARGS",cargs.join(", "))]#
   var code = """local data = ({...})[1]
 local ffi = require("ffi")
 """
+  let structbody = """{
+  char * cstr;
+  void * nimstr;
+  }"""
   code.add &"""ffi.cdef[[
+typedef struct {structbody} {rawname}_lasterror;
 bool {rawname}({cargs});
 ]]
+local last_error = ffi.new("{rawname}_lasterror*",data.lastErrorPtr)
 local cfun = ffi.C.{rawname}
 """
   let luaargs = args.mapIt(it.name).join(", ")
@@ -76,12 +80,19 @@ local cfun = ffi.C.{rawname}
 --CALLING FUNCTION
   local callres = cfun({luaargs})
   print("CALLRES",callres)
+  if not callres then
+    local errmsg = ffi.string(last_error.cstr)
+    error(errmsg)
+  end
 end"""
   echo "LUACODE ",code
   let datatable = lua.newtable()
+  datatable.rawset("lastErrorPtr",last_error.addr.pointer)
   return lua.load(code).call(datatable,LuaReference)
 
 macro implementLuajitFunction*(lua:LuaState,closure:untyped):LuaReference =
+  let i_buildErrorMsg = bindSym "buildErrorMsg"
+  let i_lastError = bindSym "last_error"
   var res = newStmtList()
   let id = ids
   ids+=1
@@ -122,7 +133,10 @@ macro implementLuajitFunction*(lua:LuaState,closure:untyped):LuaReference =
       `procbody`
     except Exception as e:
       result = 0
-      echo "Exception!"
+      let msg = `i_buildErrorMsg`(e)
+      `i_lastError`.nimstr[] = msg
+      `i_lastError`.cstr = `i_lastError`.nimstr[]
+      #echo msg
   let codegen = &"$# $#$#"
   let procpragmas = quote do:
     {.exportc: `rawpname`,codegenDecl: `codegen`,raises:[].}

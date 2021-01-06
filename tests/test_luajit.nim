@@ -22,4 +22,5 @@ test "luajit_1":
       proc test2(a:string,b,c,d:int) =
         raise newException(Exception,"TestError")
         #echo "HelloFromLuajit " & $(a,b,c,d)
-  tref2.call(("E2",3,4,5),void)
+  expect LuaCallError:
+    tref2.call(("E2",3,4,5),void)
