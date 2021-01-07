@@ -16,6 +16,11 @@ type LuaLastError = object
   cstr: cstring
   nimstr: ref string
 
+type LuajitFunctionCustom* = object
+  before_definitions*:string
+  after_call*:string
+  data*:LuaReference
+
 var last_error {.threadvar.}:LuaLastError 
 new(last_error.nimstr)
 
@@ -25,8 +30,10 @@ new(last_error.nimstr)
 
 var ids {.compiletime.}:int = 0
 
-proc bindLuajitFunction*(lua:LuaState,rawname:string,args:openarray[LuajitArgDef]):LuaReference =
-  let datatable = lua.newtable()
+proc bindLuajitFunction*(lua:LuaState,rawname:string,args:openarray[LuajitArgDef],custom:LuajitFunctionCustom):LuaReference =
+  var datatable = custom.data
+  if datatable==nil:
+    datatable = lua.newtable()
   let cargs = args.mapIt(&"{it.typename} {it.name}").join(", ")
   let luaargs = args.mapIt(it.name).join(", ")
   let transforms = args.mapIt(&"--PROCESSING {it.name}\n{it.code}").join("\n")
@@ -49,6 +56,9 @@ local ffi = require("ffi")
 --LOADING METATABLES
 {load_metatables}
 --FINISHED LOADING METATABLES
+--CUSTOM DEFINITIONS
+{custom.before_definitions}
+--FINISHED CUSTOM DEFINITIONS
 ffi.cdef[[
 typedef struct {structbody} {rawname}_lasterror;
 bool {rawname}({cargs});
@@ -64,23 +74,28 @@ return function({luaargs})
     local errmsg = ffi.string(last_error.cstr)
     error(errmsg)
   end
+  --AFTER CALL
+  {custom.after_call}
 end"""
   #echo "LUACODE ",code
   datatable.rawset("lastErrorPtr",last_error.addr.pointer)
   return lua.load(code).call(datatable,LuaReference)
 
-macro implementLuajitFunction*(lua:LuaState,closure:untyped):LuaReference =
+macro implementLuajitFunction*(lua:LuaState,closure:untyped,custom:LuajitFunctionCustom):LuaReference =
+  #echo "PASS ",pass_values.treeRepr
+  #pass_values.expectKind nnkBracket
+  var closure = closure
+  if closure.kind==nnkStmtList:
+    closure = closure[0]
+  if not (closure.kind in {nnkLambda,nnkProcDef}):
+    error(&"Invalid expression type: {closure.kind}",closure)
   let i_buildErrorMsg = bindSym "buildErrorMsg"
   let i_lastError = bindSym "last_error"
   let i_lua = ident "lua"
   var res = newStmtList()
   let id = ids
   ids+=1
-  var closure = closure
-  if closure.kind==nnkStmtList:
-    closure = closure[0]
-  if not (closure.kind in {nnkLambda,nnkProcDef}):
-    error(&"Invalid expression type: {closure.kind}",closure)
+  
   let pname = closure.name
   let params = closure.params
   let ret = params[0]
@@ -128,4 +143,7 @@ macro implementLuajitFunction*(lua:LuaState,closure:untyped):LuaReference =
       `res`
       `p`
       let `i_lua` = `lua`
-      `i_lua`.bindLuajitFunction(`rawpname`,`argdefs`)
+      `i_lua`.bindLuajitFunction(`rawpname`,`argdefs`,`custom`)
+
+template implementLuajitFunction*(lua:LuaState,closure:untyped):LuaReference =
+  implementLuajitFunction(lua,closure,LuajitFunctionCustom())

@@ -70,4 +70,27 @@ test "luajit_udata":
     proc test(u:ptr TestUserdata) =
       echo "UDATA_VALUE ",u.a
   t1.call(u1,void)
-  
+
+test "luajt_custom":
+  let lua = newLuaState()
+  let globals = lua.globals
+  type TestRet = object
+    val:cint
+  var tret {.global,threadvar.}:TestRet
+  let t1_data = lua.newtable()
+  t1_data.rawset("retptr",tret.addr.pointer)
+  let t1_custom = LuajitFunctionCustom(
+    before_definitions:"""
+local ret = ffi.new([[struct {int val;} *]],data.retptr)
+--print("CustomDefinitions",ret)
+
+    """,
+    after_call: "return ret.val",
+    data:t1_data
+  )
+  let t1 = lua.implementLuajitFunction:
+    proc test(a:int) =
+      tret.val = (a+1).cint
+  do:
+    t1_custom
+  check t1.call(100499,int)==100500
