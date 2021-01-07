@@ -102,3 +102,7 @@ test "luajit_ret":
     proc test(a:int):int =
       result = a+2
   check t1.call(100498,int)==100500
+  let t2 = lua.implementLuajitFunction:
+    proc test2(a:string):string =
+      result = "foo"&a
+  check t2.call("bar",string)=="foobar"

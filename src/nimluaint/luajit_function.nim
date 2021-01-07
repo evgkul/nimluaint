@@ -81,7 +81,13 @@ return function({luaargs})
   --RETURN
   return {retDef.getvalue}
 end"""
-  #echo "LUACODE ",code
+  when defined dumpLuajitFunctionWrapper:
+    var lines = code.split("\n")
+    echo "CODE:"
+    var i = 1
+    for l in lines:
+      echo i,":",l
+      i+=1
   datatable.rawset("lastErrorPtr",last_error.addr.pointer)
   return lua.load(code).call(datatable,LuaReference)
 
@@ -162,6 +168,7 @@ macro implementLuajitFunction*(lua:LuaState,closure:untyped,custom:LuajitFunctio
       type `i_ret` = `ret`
       `check_types`
       var `i_retstore` {.global,threadvar.}:toluajitStore `i_ret`
+      init `i_retstore`
       `p`
       let `i_lua` = `lua`
       `i_lua`.bindLuajitFunction(`rawpname`,
@@ -169,7 +176,7 @@ macro implementLuajitFunction*(lua:LuaState,closure:untyped,custom:LuajitFunctio
         `i_ret`.getDefinition(LuajitToContext(getstruct:"retstruct")),
         `i_retstore`.addr,
         `custom`)
-  echo "RESULT ",result.repr
+  #echo "RESULT ",result.repr
 
 template implementLuajitFunction*(lua:LuaState,closure:untyped):LuaReference =
   implementLuajitFunction(lua,closure,LuajitFunctionCustom())
