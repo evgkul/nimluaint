@@ -20,26 +20,23 @@ type LuajitToContext* = object
 type ToLuajitType* = concept x,type t
   t.toluajitStore is typedesc
   when t is not void:
-    toluajit(ptr (t.toluajitstore), x )
+    toluajit(var (t.toluajitstore), x )
   t.getDefinition(LuajitToContext) is LuajitToDef
 type SimpleToluajitStore*[T] = object
   val*: T
 
-proc globalptr*(t:typedesc):ptr t =
+#[proc globalptr*(t:typedesc):ptr t =
   var val {.global,threadvar.}:t
-  return val.addr
+  return val.addr]#
 
 template toluajitStore*(t:type int):typedesc = SimpleToluajitStore[cint]
-proc toluajit*(dataptr: ptr SimpleToluajitStore[cint],val:int) {.inline.}=
+proc toluajit*(dataptr: var SimpleToluajitStore[cint],val:int) {.inline.}=
   dataptr.val = val.cint
 proc getDefinition*(t:type int,context:LuajitToContext):LuajitToDef =
   result.cdef = "struct {int val;} *"
   result.getvalue = &"{context.getstruct}.val"
 
 template toluajitStore*(t:type void):typedesc = SimpleToluajitStore[cint]
-proc toluajit*(dataptr: ptr SimpleToluajitStore[cint],val:void) {.inline.}=
-  #dataptr.val = val.cint
-  discard
 proc getDefinition*(t:type void,context:LuajitToContext):LuajitToDef =
   result.cdef = "struct {int val;} *"
   result.getvalue = "nil"

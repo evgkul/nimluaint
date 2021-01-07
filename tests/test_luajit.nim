@@ -71,7 +71,7 @@ test "luajit_udata":
       echo "UDATA_VALUE ",u.a
   t1.call(u1,void)
 
-test "luajt_custom":
+#[test "luajt_custom":
   let lua = newLuaState()
   let globals = lua.globals
   type TestRet = object
@@ -93,4 +93,12 @@ local ret = ffi.new([[struct {int val;} *]],data.retptr)
       tret.val = (a+1).cint
   do:
     t1_custom
-  check t1.call(100499,int)==100500
+  check t1.call(100499,int)==100500]#
+
+test "luajit_ret":
+  let lua = newLuaState()
+  let globals = lua.globals
+  let t1 = lua.implementLuajitFunction:
+    proc test(a:int):int =
+      result = a+1
+  
