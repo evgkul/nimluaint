@@ -10,7 +10,7 @@ import strutils
 import sequtils
 import utils
 import luajit_from
-
+import luajit_to
 
 type LuaLastError = object
   cstr: cstring

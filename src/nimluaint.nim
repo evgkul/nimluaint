@@ -11,6 +11,7 @@ import nimluaint/[
   lua_metatable,
   lua_defines,
   luajit_from,
+  luajit_to,
   luajit_function
 ]
 import macros
@@ -28,5 +29,6 @@ export lua_userdata
 export lua_closure
 export lua_metatable
 export luajit_from
+export luajit_to
 export luajit_function
 export LUA_TYPE
