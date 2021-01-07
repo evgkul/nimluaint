@@ -61,8 +61,13 @@ typedef struct {structbody} {rawname}_lasterror;
 bool {rawname}({cargs});
 ]]
 local last_error = ffi.new("{rawname}_lasterror*",data.lastErrorPtr)
+local retptr = data.retstore
+--STARTED RETURN STRUCT
+local retstruct = ffi.new([[{retDef.cdef}]],retptr)
+--FINISHED RETURN STRUCT
 
 return function({luaargs})
+  local data = data --protecting from gc (not sure if needed)
 {transforms}
 --CALLING FUNCTION
   local callres = ffi.C.{rawname}({luaargs})
@@ -73,6 +78,8 @@ return function({luaargs})
   end
   --AFTER CALL
   {custom.after_call}
+  --RETURN
+  return {retDef.getvalue}
 end"""
   #echo "LUACODE ",code
   datatable.rawset("lastErrorPtr",last_error.addr.pointer)

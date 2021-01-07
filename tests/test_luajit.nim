@@ -100,5 +100,5 @@ test "luajit_ret":
   let globals = lua.globals
   let t1 = lua.implementLuajitFunction:
     proc test(a:int):int =
-      result = a+1
-  
+      result = a+2
+  check t1.call(100498,int)==100500
