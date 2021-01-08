@@ -68,7 +68,7 @@ bool {rawname}({cargs},void * envptr);
 local last_error = ffi.new("{rawname}_lasterror*",data.lastErrorPtr)
 local retptr = data.retstore
 --STARTED RETURN STRUCT
-local retstruct = ffi.new([[{retDef.cdef}]],retptr)
+local retstruct = ffi.new([[{retDef.cdef} *]],retptr)
 --FINISHED RETURN STRUCT
 return function(envptr)
 return function({luaargs})

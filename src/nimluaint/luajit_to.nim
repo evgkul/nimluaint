@@ -51,7 +51,7 @@ template implementSimpleToluajit*(ty:typedesc,to:typedesc,ctype:static[string]):
   proc toluajit*(dataptr: var SimpleToluajitStore[to],val:ty) {.inline.}=
     dataptr.val = val.to
   proc getDefinition*(t:type ty,context:LuajitToContext):LuajitToDef =
-    result.cdef = "struct {"&ctype&" val;} *"
+    result.cdef = "struct {"&ctype&" val;}"
     result.getvalue = context.getstruct&".val"
 
 #[template implementReferencedToluajit*(ty:typedesc,to:typedesc,ctype:static[string],op_getval:untyped):untyped =
@@ -77,12 +77,12 @@ proc toluajit*(dataptr: var StringRet,val:string) {.inline.}=
   dataptr.nimstr[]= val
   dataptr.str = dataptr.nimstr[]
 proc getDefinition*(t:type string,context:LuajitToContext):LuajitToDef =
-  result.cdef = "struct {char * str;int length;void * nimstr;} *"
+  result.cdef = "struct {char * str;int length;void * nimstr;}"
   result.getvalue = &"ffi.string({context.getstruct}.str,{context.getstruct}.length)"
 
 template toluajitStore*(t:type void):typedesc = SimpleToluajitStore[cint]
 proc getDefinition*(t:type void,context:LuajitToContext):LuajitToDef =
-  result.cdef = "struct {int val;} *"
+  result.cdef = "struct {int val;}"
   result.getvalue = "nil"
 
 macro toluajitStore_tuple_impl*(t:tuple ):typedesc =
@@ -105,7 +105,7 @@ macro toluajitStore_tuple_impl*(t:tuple ):typedesc =
     else:
       handleArg arg
   result = res
-  echo "RES ",result.treeRepr
+  #echo "RES ",result.treeRepr
 
 macro init_tuplewrapper_impl(v: var tuple) =
   discard
@@ -132,30 +132,31 @@ template toluajit*(o:var tuple,val:tuple) =
 
 macro getDefinition_tuple_macro(t:tuple,context:LuajitToContext) =
   let ty = t.getTypeImpl
-  echo "TY3 ",ty.treeRepr
+  #echo "TY3 ",ty.treeRepr
   let i_cdef = ident "cdef"
   let i_getvalue = ident "getvalue"
   #error("TEST",t)
   result = newStmtList()
   result.add quote do:
     var `i_cdef` = "struct { "
-    var `i_getvalue` = ""
+    var `i_getvalue`:seq[string]
   var i = 0
   for fiend in ty:
     #res
     let fname = "arg_" & $i
     result.add quote do:
       block:
-        let faccess = `context`.getstruct & `fname`
+        let faccess = `context`.getstruct & "." & `fname`
         let idef = getDefinition(typeof(`t`[`i`]),LuajitToContext(getstruct:faccess))
         cdef.add idef.cdef
         cdef.add " "
         cdef.add `fname`
         cdef.add "; "
-    discard
+        getvalue.add idef.getvalue
+    i+=1
   result.add quote do:
     cdef.add "}"
-    return LuajitToDef(cdef:cdef,getvalue:getvalue)
+    return LuajitToDef(cdef:cdef,getvalue:getvalue.join(", "))
   
 
 proc getDefinition*[T:tuple](t:type T,context:LuajitToContext):LuajitToDef =

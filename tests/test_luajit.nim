@@ -125,3 +125,4 @@ test "luajit_tuplereturn":
   let t1 = lua.implementLuajitFunction:
     proc test(a:int):(int,int) =
       return (a+2,a*2)
+  check t1.call(5,(int,int))==(7,10)
