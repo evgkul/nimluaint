@@ -123,15 +123,43 @@ macro toluajit_tuple_impl[T:tuple](o: var tuple,val:T) =
       `o`[`i`].toluajit(`val`[`i`])
     i+=1
   #error(result.repr,o)
-  discard
+  
 
   
 template toluajit*(o:var tuple,val:tuple) = 
   bind toluajit_tuple_impl
   toluajit_tuple_impl(o,val)
-  discard
+
+macro getDefinition_tuple_macro(t:tuple,context:LuajitToContext) =
+  let ty = t.getTypeImpl
+  echo "TY3 ",ty.treeRepr
+  let i_cdef = ident "cdef"
+  let i_getvalue = ident "getvalue"
+  #error("TEST",t)
+  result = newStmtList()
+  result.add quote do:
+    var `i_cdef` = "struct { "
+    var `i_getvalue` = ""
+  var i = 0
+  for fiend in ty:
+    #res
+    let fname = "arg_" & $i
+    result.add quote do:
+      block:
+        let faccess = `context`.getstruct & `fname`
+        let idef = getDefinition(typeof(`t`[`i`]),LuajitToContext(getstruct:faccess))
+        cdef.add idef.cdef
+        cdef.add " "
+        cdef.add `fname`
+        cdef.add "; "
+    discard
+  result.add quote do:
+    cdef.add "}"
+    return LuajitToDef(cdef:cdef,getvalue:getvalue)
+  
+
 proc getDefinition*[T:tuple](t:type T,context:LuajitToContext):LuajitToDef =
-  discard
+  getDefinition_tuple_macro(default T,context)
 
 type TTuple = tuple[t1:int,t2:int]
 
