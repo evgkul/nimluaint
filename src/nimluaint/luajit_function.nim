@@ -65,7 +65,7 @@ local retptr = data.retstore
 --STARTED RETURN STRUCT
 local retstruct = ffi.new([[{retDef.cdef}]],retptr)
 --FINISHED RETURN STRUCT
-
+return function()
 return function({luaargs})
   local data = data --protecting from gc (not sure if needed)
 {transforms}
@@ -80,6 +80,7 @@ return function({luaargs})
   {custom.after_call}
   --RETURN
   return {retDef.getvalue}
+end
 end"""
   when defined dumpLuajitFunctionWrapper:
     var lines = code.split("\n")
@@ -90,7 +91,7 @@ end"""
       echo ($i).align(nlen),":",l
       i+=1
   datatable.rawset("lastErrorPtr",last_error.addr.pointer)
-  return lua.load(code).call(datatable,LuaReference)
+  return lua.load(code).call(datatable,LuaReference).call((),LuaReference)
 
 macro implementLuajitFunction*(lua:LuaState,closure:untyped,custom:LuajitFunctionCustom):LuaReference =
   #echo "PASS ",pass_values.treeRepr
