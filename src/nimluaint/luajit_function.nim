@@ -124,7 +124,7 @@ proc prepareClosure*(lua:NimNode,closure:NimNode):tuple[checktypes,closure:NimNo
   return (checktypes,closure)
   
 
-macro implementLuajitFunction*(lua:LuaState,closure:untyped,custom:LuajitFunctionCustom):LuaReference =
+macro implementFFIClosure*(lua:LuaState,closure:untyped,custom:LuajitFunctionCustom):LuaReference =
   when UseLuaVersion!="luajit":
     error("Attempt to create luajit function with custom parameters without luajit",closure)
   #echo "PASS ",pass_values.treeRepr
@@ -219,14 +219,14 @@ macro implementLuajitFunction*(lua:LuaState,closure:untyped,custom:LuajitFunctio
         `custom`
       ).call(rawEnv holder.val,LuaReference)
   #echo "RESULT ",result.repr
-macro emulateImplementLuajitFunction(lua:LuaState,closure:untyped):LuaReference =
+macro emulateFFIClosure(lua:LuaState,closure:untyped):LuaReference =
   let (checktypes,closure) = lua.prepareClosure closure
   return quote do:
     `checktypes`
     implementClosure(`lua`,`closure`)
-template implementLuajitFunction*(lua:LuaState,closure:untyped):LuaReference =
+template implementFFIClosure*(lua:LuaState,closure:untyped):LuaReference =
   when UseLuaVersion=="luajit":
-    implementLuajitFunction(lua,closure,LuajitFunctionCustom())
+    implementFFIClosure(lua,closure,LuajitFunctionCustom())
   else:
     let l = lua
-    emulateImplementLuajitFunction(l,closure)
+    emulateFFIClosure(l,closure)

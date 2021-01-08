@@ -10,7 +10,7 @@ import strformat
 test "luajit_1":
   let lua = newLuaState()
   let tref = block:# expandMacros:
-    lua.implementLuajitFunction:
+    lua.implementFFIClosure:
       proc test(a:string,b,c,d:int) =
         echo "HelloFromLuajit " & $(a,b,c,d)
   let raw = lua.load("return io.open('tmp/testtttt','w')").call((),LuaReference)
@@ -19,7 +19,7 @@ test "luajit_1":
     expect LuaCallError:
       tref.call((raw,2,3,4),void)
   let tref2 = expandMacros:
-    lua.implementLuajitFunction:
+    lua.implementFFIClosure:
       proc test2(a:string,b,c,d:int) =
         raise newException(Exception,"TestError")
         #echo "HelloFromLuajit " & $(a,b,c,d)
@@ -31,7 +31,7 @@ test "luajit_speed":
   new test
   let fun1 = lua.implementClosure proc(val:int) =
     test[]+=val
-  let fun2 = lua.implementLuajitFunction:
+  let fun2 = lua.implementFFIClosure:
     proc testnative(val:int) =
       test[]+=val
   let g = lua.globals()
@@ -68,7 +68,7 @@ test "luajit_udata":
   let lua = newLuaState()
   let globals = lua.globals
   let u1 = TestUserdata(a:100500)
-  let t1 = lua.implementLuajitFunction:
+  let t1 = lua.implementFFIClosure:
     proc test(u:ptr TestUserdata) =
       echo "UDATA_VALUE ",u.a
   t1.call(u1,void)
@@ -90,7 +90,7 @@ local ret = ffi.new([[struct {int val;} *]],data.retptr)
     after_call: "return ret.val",
     data:t1_data
   )
-  let t1 = lua.implementLuajitFunction:
+  let t1 = lua.implementFFIClosure:
     proc test(a:int) =
       tret.val = (a+1).cint
   do:
@@ -100,11 +100,11 @@ local ret = ffi.new([[struct {int val;} *]],data.retptr)
 test "luajit_ret":
   let lua = newLuaState()
   let globals = lua.globals
-  let t1 = lua.implementLuajitFunction:
+  let t1 = lua.implementFFIClosure:
     proc test(a:int):int =
       return a+2
   check t1.call(100498,int)==100500
-  let t2 = lua.implementLuajitFunction:
+  let t2 = lua.implementFFIClosure:
     proc test2(a:string):string =
       return "foo"&a
   check t2.call("bar",string)=="foobar"
@@ -113,7 +113,7 @@ test "luajit_closure":
   let globals = lua.globals
   proc tproc(ival:int):LuaReference =
     var a = ival
-    return lua.implementLuajitFunction:
+    return lua.implementFFIClosure:
       proc test(b:int):int =
         return a+b
   let t1 = tproc(100499)
@@ -122,7 +122,7 @@ test "luajit_closure":
   check t2.call(1,int)==100499
 test "luajit_tuplereturn":
   let lua = newLuaState()
-  let t1 = lua.implementLuajitFunction:
+  let t1 = lua.implementFFIClosure:
     proc test(a:int):(int,string) =
       return (a+2,"TESTSTRING")
   check t1.call(5,(int,string))==(7,"TESTSTRING")
