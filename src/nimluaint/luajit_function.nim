@@ -110,6 +110,7 @@ macro implementLuajitFunction*(lua:LuaState,closure:untyped,custom:LuajitFunctio
   let i_lua = ident "lua"
   let i_ret = ident "RetType"
   let i_retstore = genSym(nskVar,"ret_store")
+  let i_return = ident "interceptReturn"
   var check_types = newStmtList()
   let id = ids
   ids+=1
@@ -123,6 +124,7 @@ macro implementLuajitFunction*(lua:LuaState,closure:untyped,custom:LuajitFunctio
     checkToluajit `i_ret`
   let args = params[1..^1]
   var body = closure.body
+  body.rewriteReturn i_return
   let rawpname = &"luajit_closure_{pname}_{id}"
   #echo "params ",params.treeRepr
   var closuredefs:seq[NimNode] = @[ident "cint"]
@@ -149,10 +151,14 @@ macro implementLuajitFunction*(lua:LuaState,closure:untyped,custom:LuajitFunctio
     try:
       when `i_ret` is void:
         template result():untyped = {.error:"Attempt to set result of void function!".}
+        template `i_return`() = break nim_code
+        template `i_return`(val:untyped) = {.error:"Function's return type is void!".}
       else:
         var lua_res:`i_ret`
         template result():untyped = lua_res
-      
+        template `i_return`(val:`i_ret`) = 
+          `i_ret` = val
+          break nim_code
       block nim_code:
         `procbody`
       when `i_ret` is not void:

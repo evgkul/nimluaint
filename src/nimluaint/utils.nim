@@ -1,6 +1,7 @@
 import lua_api
 import strformat
 import strutils
+import macros
 
 type TypeID* = pointer
 proc getTypeID*(t:typedesc):TypeID {.gcsafe.} =
@@ -28,3 +29,17 @@ proc buildErrorMsg*(e:ref Exception):string =
     errmsg.add("\n  ")
     errmsg.add(e.getStackTrace().replace("\n","\n  "))
   return errmsg
+
+proc rewriteReturn*(node:var NimNode,rename_to:NimNode):bool {.compiletime,discardable.} =
+  if node.kind==nnkReturnStmt:
+    result = true
+    let copy = node
+    node = newCall rename_to
+    #echo "TO: ",to.treeRepr
+    for c in copy:
+      if c.kind!=nnkEmpty:
+        node.add c
+  for i in 0..node.len-1:
+    var c = node[i]
+    if rewriteReturn(c,rename_to):
+      node[i] = c

@@ -34,20 +34,6 @@ proc force_keep[T](val:T) {.inline.} =
   ##Forces a value to be not removed by nim compiler
   {.emit: "/* Forcing to keep in code `val` */".}
 
-proc rewriteReturn(node:var NimNode,rename_to:NimNode):bool {.compiletime,discardable.} =
-  if node.kind==nnkReturnStmt:
-    result = true
-    let copy = node
-    node = newCall rename_to
-    #echo "TO: ",to.treeRepr
-    for c in copy:
-      if c.kind!=nnkEmpty:
-        node.add c
-  for i in 0..node.len-1:
-    var c = node[i]
-    if rewriteReturn(c,rename_to):
-      node[i] = c
-
 macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
   if not (closure.kind in {nnkLambda,nnkProcDef}):
     error(&"Invalid expression type: {closure.kind}",closure)
