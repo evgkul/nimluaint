@@ -130,17 +130,17 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
         `args_bindings`
         when RetType is not void:
           var lua_res:RetType = default RetType
-        block lua_code:
+        block nim_code:
           when RetType is not void:
             template result():untyped = lua_res
             template interceptReturn(a:untyped) =
               lua_res = a
-              break lua_code
+              break nim_code
           else:
             template interceptReturn(a:untyped) =
               {.error: "This proc's return type is void!".}
             template interceptReturn() =
-              break lua_code
+              break nim_code
           when RetType is not void and compiles(lua_res = `body`):
             lua_res = `body`
           else:
