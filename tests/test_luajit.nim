@@ -9,7 +9,7 @@ import strformat
 
 test "luajit_1":
   let lua = newLuaState()
-  let tref = expandMacros:
+  let tref = block:# expandMacros:
     lua.implementLuajitFunction:
       proc test(a:string,b,c,d:int) =
         echo "HelloFromLuajit " & $(a,b,c,d)
@@ -120,3 +120,8 @@ test "luajit_closure":
   let t2 = tproc(100498)
   check t1.call(1,int)==100500
   check t2.call(1,int)==100499
+#[test "luajit_tuplereturn":
+  let lua = newLuaState()
+  let t1 = lua.implementLuajitFunction:
+    proc test(a:int):(int,int) =
+      return (a+2,a*2)]#

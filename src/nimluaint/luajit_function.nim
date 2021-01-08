@@ -202,12 +202,12 @@ macro implementLuajitFunction*(lua:LuaState,closure:untyped,custom:LuajitFunctio
   #echo "ARGDEF ",argdefs.treeRepr
   result = quote do:
     block:
+      let `i_lua` = `lua`
       type `i_ret` = `ret`
       `check_types`
       var `i_retstore` {.global,threadvar.}:toluajitStore `i_ret`
       init `i_retstore`
       `p`
-      let `i_lua` = `lua`
       let holder = LuajitProcHolder[typeof `i_rawpname`](val: `i_rawpname`)
       `i_lua`.bindLuajitFunction(
         rawProc holder.val,

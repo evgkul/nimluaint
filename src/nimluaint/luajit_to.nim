@@ -19,7 +19,7 @@ type LuajitToContext* = object
 
 type ToLuajitType* = concept x,type t
   t.toluajitStore is typedesc
-  when t is not void:
+  when t is not void and t is not tuple:
     toluajit(var (t.toluajitstore), x )
   t.getDefinition(LuajitToContext) is LuajitToDef
 type SimpleToluajitStore*[T] = object
@@ -88,20 +88,26 @@ proc getDefinition*(t:type void,context:LuajitToContext):LuajitToDef =
 macro toluajitStore*(t:type tuple):typedesc =
   let ty = t.getTypeImpl[1]
   result = quote do:
-    tuple[]
-  echo "TY ",result.treeRepr
+    ()
+  echo "TY ",ty.treeRepr
   var i = 0
   for arg in ty:
     var argty = arg
     if argty.kind==nnkIdentDefs:
       argty = argty[1]
-    let fname = &"val_{i}"
     let store_ty = quote do:
       `arg_ty`.toluajitStore
-    result.add newIdentDefs(ident fname,store_ty)
+    result.add store_ty#newIdentDefs(ident fname,store_ty)
     i+=1
+  echo "RES ",result.treeRepr
 
+macro toluajit_tuple_impl[T:tuple](o: var T.toluajitStor,val:T) =
+  discard
 
+proc toluajit*[T:tuple](o: var (T.toluajitStore),val:T) =
+  o.toluajit_tuple_impl val
+proc getDefinition*[T:tuple](t:type T,context:LuajitToContext):LuajitToDef =
+  discard
 
 static: assert toluajitStore( tuple[a,b:int] ) is (int.toluajitStore,int.toluajitStore)
 
@@ -109,3 +115,4 @@ template checkToluajit*(t: type ToLuajitType) = discard
 checkToLuajit int
 checkToluajit void
 checkToluajit string
+#checkToluajit (int,int) {.explain.}

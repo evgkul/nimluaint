@@ -40,16 +40,16 @@ template raw*(state:LuaState):PState =
   state[].raw
 template update_raw*(state:LuaState,r:PState) =
   state.raw = r
+
 template withLockedState*(lua:LuaState,code:untyped) =
+  #echo "LOCKING ",lua==nil
   let old = lua.raw
   lua.raw = nil
   try:
     code
   finally:
     lua.raw = old
-    for act in lua.on_unlock_handlers:
-      act(old)
-    lua.on_unlock_handlers.setLen 0
+    
 template onUnlock*(lua:LuaState,i_L:untyped,code:untyped) =
   let l = lua
   let i_L = l.raw
