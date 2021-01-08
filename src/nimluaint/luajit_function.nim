@@ -83,10 +83,11 @@ return function({luaargs})
 end"""
   when defined dumpLuajitFunctionWrapper:
     var lines = code.split("\n")
+    let nlen = len $(lines.len+1)
     echo "CODE:"
     var i = 1
     for l in lines:
-      echo i,":",l
+      echo ($i).align(nlen),":",l
       i+=1
   datatable.rawset("lastErrorPtr",last_error.addr.pointer)
   return lua.load(code).call(datatable,LuaReference)
