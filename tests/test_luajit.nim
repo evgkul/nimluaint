@@ -106,3 +106,15 @@ test "luajit_ret":
     proc test2(a:string):string =
       result = "foo"&a
   check t2.call("bar",string)=="foobar"
+test "luajit_closure":
+  let lua = newLuaState()
+  let globals = lua.globals
+  proc tproc(ival:int):LuaReference =
+    var a = ival
+    return lua.implementLuajitFunction:
+      proc test(b:int):int =
+        result = a+b
+  let t1 = tproc(100499)
+  let t2 = tproc(100498)
+  check t1.call(1,int)==100500
+  check t2.call(1,int)==100499

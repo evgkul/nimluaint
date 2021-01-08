@@ -26,11 +26,15 @@ new(last_error.nimstr)
 
 var ids {.compiletime.}:int = 0
 
-proc bindLuajitFunction*(lua:LuaState,rawname:string,args:openarray[LuajitArgDef],retDef:LuajitToDef,retStore:pointer,custom:LuajitFunctionCustom):LuaReference =
+type LuajitProcHolder*[T:proc] = ref object of RootObj
+  val*: T
+
+proc bindLuajitFunction*(lua:LuaState,rawptr:pointer,keep:UnknownUserdata,rawname:string,args:openarray[LuajitArgDef],retDef:LuajitToDef,retStore:pointer,custom:LuajitFunctionCustom):LuaReference =
   var datatable = custom.data
   if datatable==nil:
     datatable = lua.newtable()
   datatable.rawset("retstore",retStore)
+  datatable.rawset("keep",keep)
   let cargs = args.mapIt(&"{it.typename} {it.name}").join(", ")
   let luaargs = args.mapIt(it.name).join(", ")
   let transforms = args.mapIt(&"--PROCESSING {it.name}\n{it.code}").join("\n")
@@ -58,19 +62,19 @@ local ffi = require("ffi")
 --FINISHED CUSTOM DEFINITIONS
 ffi.cdef[[
 typedef struct {structbody} {rawname}_lasterror;
-bool {rawname}({cargs});
+bool {rawname}({cargs},void * envptr);
 ]]
 local last_error = ffi.new("{rawname}_lasterror*",data.lastErrorPtr)
 local retptr = data.retstore
 --STARTED RETURN STRUCT
 local retstruct = ffi.new([[{retDef.cdef}]],retptr)
 --FINISHED RETURN STRUCT
-return function()
+return function(envptr)
 return function({luaargs})
   local data = data --protecting from gc (not sure if needed)
 {transforms}
 --CALLING FUNCTION
-  local callres = ffi.C.{rawname}({luaargs})
+  local callres = ffi.C.{rawname}({luaargs},envptr)
   --print("CALLRES",callres)
   if not callres then
     local errmsg = ffi.string(last_error.cstr)
@@ -91,7 +95,7 @@ end"""
       echo ($i).align(nlen),":",l
       i+=1
   datatable.rawset("lastErrorPtr",last_error.addr.pointer)
-  return lua.load(code).call(datatable,LuaReference).call((),LuaReference)
+  return lua.load(code).call(datatable,LuaReference)
 
 macro implementLuajitFunction*(lua:LuaState,closure:untyped,custom:LuajitFunctionCustom):LuaReference =
   #echo "PASS ",pass_values.treeRepr
@@ -160,9 +164,10 @@ macro implementLuajitFunction*(lua:LuaState,closure:untyped,custom:LuajitFunctio
       `i_lastError`.cstr = `i_lastError`.nimstr[]
       #echo msg
   let codegen = &"$# $#$#"
+  let i_rawpname = ident rawpname
   let procpragmas = quote do:
-    {.exportc: `rawpname`,codegenDecl: `codegen`,raises:[].}
-  let p = newProc(ident rawpname,closuredefs,procbody_wrapped,pragmas=procpragmas)
+    {.exportc: `rawpname`,codegenDecl: `codegen`,raises:[],closure.}
+  let p = newProc(i_rawpname,closuredefs,procbody_wrapped,pragmas=procpragmas)
   #echo "PROC ",p.repr
   #echo "ARGDEF ",argdefs.treeRepr
   result = quote do:
@@ -173,11 +178,16 @@ macro implementLuajitFunction*(lua:LuaState,closure:untyped,custom:LuajitFunctio
       init `i_retstore`
       `p`
       let `i_lua` = `lua`
-      `i_lua`.bindLuajitFunction(`rawpname`,
+      let holder = LuajitProcHolder[typeof `i_rawpname`](val: `i_rawpname`)
+      `i_lua`.bindLuajitFunction(
+        rawProc holder.val,
+        holder.UnknownUserdata,
+        `rawpname`,
         `argdefs`,
         `i_ret`.getDefinition(LuajitToContext(getstruct:"retstruct")),
         `i_retstore`.addr,
-        `custom`)
+        `custom`
+      ).call(rawEnv holder.val,LuaReference)
   #echo "RESULT ",result.repr
 
 template implementLuajitFunction*(lua:LuaState,closure:untyped):LuaReference =

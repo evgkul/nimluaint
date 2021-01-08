@@ -23,7 +23,7 @@ proc pushUserdataMetatable*(lua:LuaState,ty:typedesc) =
     L.pushvalue(-1)
     let metaptr = L.topointer(-1)
     let meta = lua.popReference()
-    ty.buildMetatable(lua,meta.LuaMetatable)
+    ty.buildMetatable(lua,LuaMetatable meta)
     meta.autodestroy = false
     let metaid = meta.rawref
     lua.typemetatables[id]=(metaid,metaptr)
@@ -85,3 +85,7 @@ macro implementUserdata*(ty: typedesc,lua:untyped,meta:untyped,code:untyped) =
       `code`
     proc `test`() =
       `ty`.buildMetatable(default LuaState,default LuaMetatable)
+
+type UnknownUserdata* = distinct ref RootObj
+UnknownUserdata.implementUserdata(lua,meta):
+  discard
