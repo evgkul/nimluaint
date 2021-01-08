@@ -123,6 +123,6 @@ test "luajit_closure":
 test "luajit_tuplereturn":
   let lua = newLuaState()
   let t1 = lua.implementLuajitFunction:
-    proc test(a:int):(int,int) =
-      return (a+2,a*2)
-  check t1.call(5,(int,int))==(7,10)
+    proc test(a:int):(int,string) =
+      return (a+2,"TESTSTRING")
+  check t1.call(5,(int,string))==(7,"TESTSTRING")

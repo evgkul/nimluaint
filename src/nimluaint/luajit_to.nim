@@ -9,6 +9,7 @@ import strformat
 import strutils
 import sequtils
 import utils
+import typetraits
 
 type LuajitToDef* = object
   cdef*:string
@@ -107,10 +108,16 @@ macro toluajitStore_tuple_impl*(t:tuple ):typedesc =
   result = res
   #echo "RES ",result.treeRepr
 
-macro init_tuplewrapper_impl(v: var tuple) =
-  discard
-proc luajit_store_init*(v: var tuple) =
-  v.init_tuplewrapper_impl()
+macro init_tuplewrapper_impl[T](v: var T,l: static[int]) =
+  #let ty = tuplesample.getType
+  result = newStmtList()
+  for i in 0..l-1:
+    result.add quote do:
+      luajit_store_init `v`[`i`]
+
+proc luajit_store_init*[T:tuple](v: var T) =
+  bind init_tuplewrapper_impl
+  init_tuplewrapper_impl(v,arity typeof(v))
 template toluajitStore*(t:type tuple):typedesc = 
   (default t).toluajitStore_tuple_impl #Ugly, I know
 macro toluajit_tuple_impl[T:tuple](o: var tuple,val:T) =
