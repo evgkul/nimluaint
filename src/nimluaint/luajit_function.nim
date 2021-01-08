@@ -118,6 +118,9 @@ proc prepareClosure*(lua:NimNode,closure:NimNode):tuple[checktypes,closure:NimNo
     for name in argdef[0..^3]:
       check_types.add quote do:
         checkFromluajit(`ty`) {.explain.}
+  closure.body = quote do:
+    `lua`.withLockedState:
+      `body`
   return (checktypes,closure)
   
 

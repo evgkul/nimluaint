@@ -9,8 +9,10 @@ type LuaReferenceInner = object
   ltype: LUA_TYPE
   autodestroy*: bool
 proc `=destroy`(lref: var LuaReferenceInner)=
+  let rawref = lref.rawref
   if lref.autodestroy:
-    lref.lua.raw.unref(LUA_REGISTRYINDEX,lref.rawref)
+    lref.lua.onUnlock L:
+      L.unref(LUA_REGISTRYINDEX,rawref)
   reset lref.lua
 
 type LuaReference* = ref LuaReferenceInner
