@@ -11,7 +11,8 @@ import sequtils
 import utils
 import luajit_from
 import luajit_to
-
+import lua_defines
+import lua_closure
 type LuaLastError = object
   cstr: cstring
   nimstr: ref string
@@ -97,21 +98,43 @@ end"""
   datatable.rawset("lastErrorPtr",last_error.addr.pointer)
   return lua.load(code).call(datatable,LuaReference)
 
-macro implementLuajitFunction*(lua:LuaState,closure:untyped,custom:LuajitFunctionCustom):LuaReference =
-  #echo "PASS ",pass_values.treeRepr
-  #pass_values.expectKind nnkBracket
+proc prepareClosure*(lua:NimNode,closure:NimNode):tuple[checktypes,closure:NimNode] {.compiletime.}=
   var closure = closure
   if closure.kind==nnkStmtList:
     closure = closure[0]
   if not (closure.kind in {nnkLambda,nnkProcDef}):
     error(&"Invalid expression type: {closure.kind}",closure)
+  var checktypes = newStmtList()
+  let params = closure.params
+  var ret = params[0]
+  if ret.kind==nnkEmpty:
+    ret = ident "void"
+  check_types.add quote do:
+    checkToluajit `ret`
+  let args = params[1..^1]
+  var body = closure.body
+  for argdef in args:
+    let ty = argdef[^2]
+    for name in argdef[0..^3]:
+      check_types.add quote do:
+        checkFromluajit(`ty`) {.explain.}
+  return (checktypes,closure)
+  
+
+macro implementLuajitFunction*(lua:LuaState,closure:untyped,custom:LuajitFunctionCustom):LuaReference =
+  when UseLuaVersion!="luajit":
+    error("Attempt to create luajit function with custom parameters without luajit",closure)
+  #echo "PASS ",pass_values.treeRepr
+  #pass_values.expectKind nnkBracket
   let i_buildErrorMsg = bindSym "buildErrorMsg"
   let i_lastError = bindSym "last_error"
   let i_lua = ident "lua"
   let i_ret = ident "RetType"
   let i_retstore = genSym(nskVar,"ret_store")
   let i_return = ident "interceptReturn"
-  var check_types = newStmtList()
+  let (check_types,closure) = i_lua.prepareClosure closure
+
+  #var check_types = newStmtList()
   let id = ids
   ids+=1
   
@@ -120,8 +143,6 @@ macro implementLuajitFunction*(lua:LuaState,closure:untyped,custom:LuajitFunctio
   var ret = params[0]
   if ret.kind==nnkEmpty:
     ret = ident "void"
-  check_types.add quote do:
-    checkToluajit `i_ret`
   let args = params[1..^1]
   var body = closure.body
   body.rewriteReturn i_return
@@ -137,8 +158,6 @@ macro implementLuajitFunction*(lua:LuaState,closure:untyped,custom:LuajitFunctio
       #echo "ARG ",name.treeRepr,": ",ty.treeRepr
       let cty = quote do:
         `ty`.nimSideType
-      check_types.add quote do:
-        checkFromluajit(`ty`) {.explain.}
       closuredefs.add newIdentDefs(name,cty)
       procbody.add quote do:
         let `name`:`ty` = `ty`.tonim(`name`)
@@ -197,6 +216,14 @@ macro implementLuajitFunction*(lua:LuaState,closure:untyped,custom:LuajitFunctio
         `custom`
       ).call(rawEnv holder.val,LuaReference)
   #echo "RESULT ",result.repr
-
+macro emulateImplementLuajitFunction(lua:LuaState,closure:untyped):LuaReference =
+  let (checktypes,closure) = lua.prepareClosure closure
+  return quote do:
+    `checktypes`
+    implementClosure(`lua`,`closure`)
 template implementLuajitFunction*(lua:LuaState,closure:untyped):LuaReference =
-  implementLuajitFunction(lua,closure,LuajitFunctionCustom())
+  when UseLuaVersion=="luajit":
+    implementLuajitFunction(lua,closure,LuajitFunctionCustom())
+  else:
+    let l = lua
+    emulateImplementLuajitFunction(l,closure)
