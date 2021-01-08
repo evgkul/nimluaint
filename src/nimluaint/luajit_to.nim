@@ -120,36 +120,24 @@ proc luajit_store_init*[T:tuple](v: var T) =
   init_tuplewrapper_impl(v,arity typeof(v))
 template toluajitStore*(t:type tuple):typedesc = 
   (default t).toluajitStore_tuple_impl #Ugly, I know
-macro toluajit_tuple_impl[T:tuple](o: var tuple,val:T) =
-  let ty = val.getTypeImpl
-  #echo "TY2 ",ty.treeRepr
+macro toluajit_tuple_impl[T:tuple](o: var tuple,tlen:static[int],val:T) =
   result = newStmtList()
-  var i = 0
-  for field in ty:
+  for i in 0..tlen-1:
     result.add quote do:
       `o`[`i`].toluajit(`val`[`i`])
-    i+=1
-  #error(result.repr,o)
   
-
-  
-template toluajit*(o:var tuple,val:tuple) = 
+proc toluajit*[A:tuple,B:tuple](o:var A,val:B) = 
   bind toluajit_tuple_impl
-  toluajit_tuple_impl(o,val)
+  toluajit_tuple_impl(o,tupleLen val,val)
 
-macro getDefinition_tuple_macro(t:tuple,context:LuajitToContext) =
-  let ty = t.getTypeImpl
-  #echo "TY3 ",ty.treeRepr
+macro getDefinition_tuple_macro(t:tuple,tlen:static[int],context:LuajitToContext) =
   let i_cdef = ident "cdef"
   let i_getvalue = ident "getvalue"
-  #error("TEST",t)
   result = newStmtList()
   result.add quote do:
     var `i_cdef` = "struct { "
     var `i_getvalue`:seq[string]
-  var i = 0
-  for fiend in ty:
-    #res
+  for i in 0..tlen-1:
     let fname = "arg_" & $i
     result.add quote do:
       block:
@@ -160,14 +148,13 @@ macro getDefinition_tuple_macro(t:tuple,context:LuajitToContext) =
         cdef.add `fname`
         cdef.add "; "
         getvalue.add idef.getvalue
-    i+=1
   result.add quote do:
     cdef.add "}"
     return LuajitToDef(cdef:cdef,getvalue:getvalue.join(", "))
   
 
 proc getDefinition*[T:tuple](t:type T,context:LuajitToContext):LuajitToDef =
-  getDefinition_tuple_macro(default T,context)
+  getDefinition_tuple_macro(default T,tupleLen T,context)
 
 type TTuple = tuple[t1:int,t2:int]
 
