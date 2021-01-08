@@ -151,15 +151,17 @@ macro implementLuajitFunction*(lua:LuaState,closure:untyped,custom:LuajitFunctio
     try:
       when `i_ret` is void:
         template result():untyped = {.error:"Attempt to set result of void function!".}
-        template `i_return`() = break nim_code
-        template `i_return`(val:untyped) = {.error:"Function's return type is void!".}
       else:
         var lua_res:`i_ret`
-        template result():untyped = lua_res
-        template `i_return`(val:`i_ret`) = 
-          `i_ret` = val
-          break nim_code
+        template result():untyped = lua_res 
       block nim_code:
+        when `i_ret` is void:
+          template `i_return`() = break nim_code
+          template `i_return`(val:untyped) = {.error:"Function's return type is void!".}
+        else:
+          template `i_return`(val:`i_ret`) = 
+            lua_res = val
+            break nim_code
         `procbody`
       when `i_ret` is not void:
         `i_retstore`.toluajit(lua_res)
