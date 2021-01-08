@@ -120,8 +120,8 @@ test "luajit_closure":
   let t2 = tproc(100498)
   check t1.call(1,int)==100500
   check t2.call(1,int)==100499
-#[test "luajit_tuplereturn":
+test "luajit_tuplereturn":
   let lua = newLuaState()
   let t1 = lua.implementLuajitFunction:
     proc test(a:int):(int,int) =
-      return (a+2,a*2)]#
+      return (a+2,a*2)

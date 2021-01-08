@@ -24,7 +24,7 @@ type ToLuajitType* = concept x,type t
   t.getDefinition(LuajitToContext) is LuajitToDef
 type SimpleToluajitStore*[T] = object
   val*: T
-template init*(val:var SimpleToluajitStore) = discard
+template luajit_store_init*(val:var SimpleToluajitStore) = discard
 
 template toluajit_rawtype*(str:string):cstring =
   str
@@ -32,7 +32,7 @@ template toluajit_rawtype*(str:string):cstring =
 #[type ReferencedToluajitStore*[Nimtype,Rawtype] = object
   val*:Rawtype
   nimval*:ref Nimtype
-template init*[Nimtype,Rawtype](val:var ReferencedToluajitStore[Nimtype,Rawtype]) = new val.nimval
+template luajit_store_init*[Nimtype,Rawtype](val:var ReferencedToluajitStore[Nimtype,Rawtype]) = new val.nimval
 
 
 template setvalue*[Nimtype,Rawtype](store:var ReferencedToluajitStore[Nimtype,Rawtype],value:Nimtype) =
@@ -70,7 +70,7 @@ type StringRet* = object
   str:cstring
   length:cint
   nimstr:ref string
-template init*(val: var StringRet) = new(val.nimstr)
+template luajit_store_init*(val: var StringRet) = new(val.nimstr)
 template toluajitStore*(t:type string):typedesc = StringRet
 proc toluajit*(dataptr: var StringRet,val:string) {.inline.}=
   dataptr.length = val.len.cint
@@ -85,34 +85,63 @@ proc getDefinition*(t:type void,context:LuajitToContext):LuajitToDef =
   result.cdef = "struct {int val;} *"
   result.getvalue = "nil"
 
-macro toluajitStore*(t:type tuple):typedesc =
-  let ty = t.getTypeImpl[1]
-  result = quote do:
+macro toluajitStore_tuple_impl*(t:tuple ):typedesc =
+  let ty = t.getTypeImpl 
+  #ty.expectKind nnkTupleTy
+  var res = quote do:
     ()
-  echo "TY ",ty.treeRepr
-  var i = 0
-  for arg in ty:
-    var argty = arg
-    if argty.kind==nnkIdentDefs:
-      argty = argty[1]
+  #echo "I ",t.treeRepr
+  #echo "TY ",ty.treeRepr
+  proc handleArg(argty:NimNode) =
+    let i = ident argty.strVal
     let store_ty = quote do:
-      `arg_ty`.toluajitStore
-    result.add store_ty#newIdentDefs(ident fname,store_ty)
-    i+=1
+      `i`.toluajitStore
+    res.add store_ty#newIdentDefs(ident fname,store_ty)
+  for arg in ty:
+    if arg.kind==nnkIdentDefs:
+      let argty = arg[^2]
+      for name in arg[0..^3]:
+        handleArg argty
+    else:
+      handleArg arg
+  result = res
   echo "RES ",result.treeRepr
 
-macro toluajit_tuple_impl[T:tuple](o: var T.toluajitStor,val:T) =
+macro init_tuplewrapper_impl(v: var tuple) =
+  discard
+proc luajit_store_init*(v: var tuple) =
+  v.init_tuplewrapper_impl()
+template toluajitStore*(t:type tuple):typedesc = 
+  (default t).toluajitStore_tuple_impl #Ugly, I know
+macro toluajit_tuple_impl[T:tuple](o: var tuple,val:T) =
+  let ty = val.getTypeImpl
+  #echo "TY2 ",ty.treeRepr
+  result = newStmtList()
+  var i = 0
+  for field in ty:
+    result.add quote do:
+      `o`[`i`].toluajit(`val`[`i`])
+    i+=1
+  #error(result.repr,o)
   discard
 
-proc toluajit*[T:tuple](o: var (T.toluajitStore),val:T) =
-  o.toluajit_tuple_impl val
+  
+template toluajit*(o:var tuple,val:tuple) = 
+  bind toluajit_tuple_impl
+  toluajit_tuple_impl(o,val)
+  discard
 proc getDefinition*[T:tuple](t:type T,context:LuajitToContext):LuajitToDef =
   discard
 
-static: assert toluajitStore( tuple[a,b:int] ) is (int.toluajitStore,int.toluajitStore)
+type TTuple = tuple[t1:int,t2:int]
+
+static: 
+  assert toluajitStore( tuple[a,b:int] ) is (int.toluajitStore,int.toluajitStore)
+  assert toluajitStore( (int,int) ) is (int.toluajitStore,int.toluajitStore)
+  assert toluajitStore( TTuple ) is (int.toluajitStore,int.toluajitStore)
 
 template checkToluajit*(t: type ToLuajitType) = discard
 checkToLuajit int
 checkToluajit void
 checkToluajit string
-#checkToluajit (int,int) {.explain.}
+checkToluajit (int,int) {.explain.}

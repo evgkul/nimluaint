@@ -30,6 +30,17 @@ proc buildErrorMsg*(e:ref Exception):string =
     errmsg.add(e.getStackTrace().replace("\n","\n  "))
   return errmsg
 
+proc extractTypedef*(node:NimNode):NimNode =
+  result = node
+  echo "STARTED EXTRACTION"
+  while true:
+    echo "STEP ",result.treeRepr
+    if result.kind==nnkSym:
+      result = result.getImpl
+      continue
+    break
+  echo "EXTRACTED ",result.treeRepr
+
 proc rewriteReturn*(node:var NimNode,rename_to:NimNode):bool {.compiletime,discardable.} =
   if node.kind==nnkReturnStmt:
     result = true

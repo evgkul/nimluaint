@@ -206,7 +206,7 @@ macro implementLuajitFunction*(lua:LuaState,closure:untyped,custom:LuajitFunctio
       type `i_ret` = `ret`
       `check_types`
       var `i_retstore` {.global,threadvar.}:toluajitStore `i_ret`
-      init `i_retstore`
+      luajit_store_init `i_retstore`
       `p`
       let holder = LuajitProcHolder[typeof `i_rawpname`](val: `i_rawpname`)
       `i_lua`.bindLuajitFunction(
