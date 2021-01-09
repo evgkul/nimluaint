@@ -27,13 +27,31 @@ proc genTCheck(argname:string,ty:string):string =
     error("Invalid type: expected {ty}, got "..type({argname}))
   end
 """
+template implementNumber*(ty:typedesc,extty:typedesc,ctype:static[string]):untyped =
+  template nimSideType*(t:type ty):typedesc = extty
+  #template luaSideType*(t:type int):string = "int"
+  proc genLuaDef*(t:type ty,lua:LuaState,argname:string):LuajitArgDef = 
+    return LuajitArgDef(name:argname,typename:"int",code:genTCheck(argname,"number"))
+  #template toluajit*(val:int):cint = val.cint
+  template tonim*(t:type ty,val:extty):ty = val.ty
 
-template nimSideType*(t:type int):typedesc = cint
-#template luaSideType*(t:type int):string = "int"
-proc genLuaDef*(t:type int,lua:LuaState,argname:string):LuajitArgDef = 
-  return LuajitArgDef(name:argname,typename:"int",code:genTCheck(argname,"number"))
-#template toluajit*(val:int):cint = val.cint
-template tonim*(t:type int,val:cint):int = val.int
+template implementNumber*(ty:typedesc,ctype:static[string]):untyped =
+  implementNumber(ty,ty,ctype)
+
+int.implementNumber(cint,"int")
+float.implementNumber(cdouble,"double")
+float64.implementNumber(cdouble,"double")
+float32.implementNumber(cfloat,"float")
+uint.implementNumber(cuint,"unsigned int")
+
+int64.implementNumber "int64_t"
+int32.implementNumber "int32_t"
+int16.implementNumber "int16_t"
+int8.implementNumber "int8_t"
+uint64.implementNumber "uint64_t"
+uint32.implementNumber "uint32_t"
+uint16.implementNumber "uint16_t"
+uint8.implementNumber "uint8_t"
 
 template nimSideType*(t:type string):typedesc = cstring
 #template luaSideType*(t:type string):string = "const char *"
