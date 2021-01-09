@@ -54,7 +54,8 @@ template implementSimpleToluajit*(ty:typedesc,to:typedesc,ctype:static[string]):
   proc getDefinition*(t:type ty,context:LuajitToContext):LuajitToDef =
     result.cdef = "struct {"&ctype&" val;}"
     result.getvalue = context.getstruct&".val"
-
+template implementSimpleToluajit*(ty:typedesc,ctype:static[string]):untyped =
+  implementSimpleToluajit(ty,ty,ctype)
 #[template implementReferencedToluajit*(ty:typedesc,to:typedesc,ctype:static[string],op_getval:untyped):untyped =
   template toluajitStore*(t:type ty):typedesc = ReferencedToluajitStore[ty,to]
   proc toluajit*(dataptr: var ReferencedToluajitStore[ty,to],val:ty) {.inline.}=
@@ -64,6 +65,20 @@ template implementSimpleToluajit*(ty:typedesc,to:typedesc,ctype:static[string]):
     result.getvalue = op_getval]#
 
 int.implementSimpleToluajit(cint,"int")
+float.implementSimpleToluajit(cdouble,"double")
+float64.implementSimpleToluajit(cdouble,"double")
+float32.implementSimpleToluajit(cfloat,"float")
+uint.implementSimpleToluajit(cuint,"unsigned int")
+
+int64.implementSimpleToluajit "int64_t"
+int32.implementSimpleToluajit "int32_t"
+int16.implementSimpleToluajit "int16_t"
+int8.implementSimpleToluajit "int8_t"
+uint64.implementSimpleToluajit "uint64_t"
+uint32.implementSimpleToluajit "uint32_t"
+uint16.implementSimpleToluajit "uint16_t"
+uint8.implementSimpleToluajit "uint8_t"
+
 
 #string.implementReferencedToluajit(cstring,"char *","tostring("&context.getstruct&".val)")
 
