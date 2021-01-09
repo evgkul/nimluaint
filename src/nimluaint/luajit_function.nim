@@ -104,6 +104,7 @@ end"""
 proc prepareClosure*(lua:NimNode,closure:NimNode):tuple[checktypes,closure:NimNode] {.compiletime.}=
   var closure = closure
   if closure.kind==nnkStmtList:
+    closure.expectLen 1
     closure = closure[0]
   if not (closure.kind in {nnkLambda,nnkProcDef}):
     error(&"Invalid expression type: {closure.kind}",closure)
@@ -153,7 +154,10 @@ macro implementFFIClosure*(lua:LuaState,closure:untyped,custom:LuajitFunctionCus
   let id = ids
   ids+=1
   
-  let pname = closure.name
+  var fname_node = closure.name
+  if fname_node.kind==nnkEmpty:
+    fname_node = ident "unnamed"
+  let fname = fname_node.strVal
   let params = closure.params
   var ret = params[0]
   if ret.kind==nnkEmpty:
@@ -161,7 +165,7 @@ macro implementFFIClosure*(lua:LuaState,closure:untyped,custom:LuajitFunctionCus
   let args = params[1..^1]
   var body = closure.body
   body.rewriteReturn i_return
-  let rawpname = &"luajit_closure_{pname}_{id}"
+  let rawpname = &"luajit_closure_{fname}_{id}"
   #echo "params ",params.treeRepr
   var closuredefs:seq[NimNode] = @[ident "cint"]
   var procbody = newStmtList()

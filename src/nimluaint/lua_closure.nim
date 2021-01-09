@@ -35,6 +35,10 @@ proc force_keep[T](val:T) {.inline.} =
   {.emit: "/* Forcing to keep in code `val` */".}
 
 macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
+  var closure = closure
+  if closure.kind==nnkStmtList:
+    closure.expectLen 1
+    closure = closure[0]
   if not (closure.kind in {nnkLambda,nnkProcDef}):
     error(&"Invalid expression type: {closure.kind}",closure)
   let i_renameto = ident "interceptReturn"
@@ -65,8 +69,12 @@ macro implementClosure*(lua:LuaState,closure: untyped):LuaReference =
   var body = closure.body
   rewriteReturn(body,i_renameto)
   #echo "RET: ",ret.treeRepr
-  let cname = &"cfunction_{pincr}"
-  let inner_cname = &"inner_{cname}"
+  var fname_node = closure.name
+  if fname_node.kind==nnkEmpty:
+    fname_node = ident "unnamed"
+  let fname = fname_node.strVal
+  let cname = &"cfunction_{fname}_{pincr}"
+  let inner_cname = &"inner_{fname}_{cname}"
   pincr+=1
   let ptrindex = upvalueindex(1)
   let cdecl = """int CFUNC(void* L){
