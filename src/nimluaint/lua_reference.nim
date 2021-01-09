@@ -23,6 +23,10 @@ LuaReference.exportReadonly ltype
 proc pushOnStack*(lref:LuaReference) =
   lref.lua.raw.rawgeti(LUA_REGISTRYINDEX,lref.rawref)
 
+template toraw*(lref:LuaReference):cint =
+  lref.autodestroy = false
+  lref.rawref
+
 proc to*(lref:LuaReference,ty:typedesc):ty =
   let lua = lref.lua
   lua.raw.protectStack start:

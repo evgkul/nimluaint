@@ -5,6 +5,7 @@ import logging
 import strformat
 import tables
 import logging
+import luajit_cache
 
 type LuaInvalidType* = object of CatchableError
 type LuaLoadError* = object of CatchableError
@@ -26,6 +27,7 @@ type LuaStateObj* = object
   autodestroy*: bool
   typemetatables*: Table[TypeID,LuaUserdataInfo]
   on_unlock_handlers: seq[proc(L:PState):void {.closure,raises:[].}]
+  luajit_cache*: LuajitCache
 
 proc `=destroy`(obj: var LuaStateObj) =
   if obj.autodestroy:

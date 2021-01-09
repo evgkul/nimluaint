@@ -4,6 +4,7 @@ import lua_call
 import lua_reference
 import lua_state
 import lua_rawtable
+import lua_to
 import macros
 import strformat
 import strutils
@@ -30,12 +31,11 @@ var ids {.compiletime.}:int = 0
 type LuajitProcHolder*[T:proc] = ref object of RootObj
   val*: T
 
-proc bindLuajitFunction*(lua:LuaState,rawptr:pointer,keep:UnknownUserdata,rawname:string,args:openarray[LuajitArgDef],retDef:LuajitToDef,retStore:pointer,custom:LuajitFunctionCustom):LuaReference =
+proc bindLuajitFunction*(lua:LuaState,rawptr:pointer,rawname:string,args:openarray[LuajitArgDef],retDef:LuajitToDef,retStore:pointer,custom:LuajitFunctionCustom):LuaReference =
   var datatable = custom.data
   if datatable==nil:
     datatable = lua.newtable()
   datatable.rawset("retstore",retStore)
-  datatable.rawset("keep",keep)
   let cargs = args.mapIt(&"{it.typename} {it.name}").join(", ")
   let luaargs = args.mapIt(it.name).join(", ")
   let transforms = args.mapIt(&"--PROCESSING {it.name}\n{it.code}").join("\n")
@@ -70,9 +70,11 @@ local retptr = data.retstore
 --STARTED RETURN STRUCT
 local retstruct = ffi.new([[{retDef.cdef} *]],retptr)
 --FINISHED RETURN STRUCT
-return function(envptr)
+return function(envptr,keep)
 return function({luaargs})
+
   local data = data --protecting from gc (not sure if needed)
+  local keep = keep
 {transforms}
 --CALLING FUNCTION
   local callres = ffi.C.{rawname}({luaargs},envptr)
@@ -123,6 +125,14 @@ proc prepareClosure*(lua:NimNode,closure:NimNode):tuple[checktypes,closure:NimNo
       `body`
   return (checktypes,closure)
   
+template getOrCreateWrapper*(lua:LuaState,funptr:pointer,code:LuaReference):LuaReference =
+  if lua.luajit_cache.closure_wrappers.contains funptr:
+    let rawref = lua.luajit_cache.closure_wrappers[funptr]
+    newLuaReference(lua,rawref,LFUNCTION)
+  else:
+    let r = code
+    let rawref = r.toraw
+    lua.luajit_cache.closure_wrappers[funptr] = rawref
 
 macro implementFFIClosure*(lua:LuaState,closure:untyped,custom:LuajitFunctionCustom):LuaReference =
   when UseLuaVersion!="luajit":
@@ -211,13 +221,12 @@ macro implementFFIClosure*(lua:LuaState,closure:untyped,custom:LuajitFunctionCus
       let holder = LuajitProcHolder[typeof `i_rawpname`](val: `i_rawpname`)
       `i_lua`.bindLuajitFunction(
         rawProc holder.val,
-        holder.UnknownUserdata,
         `rawpname`,
         `argdefs`,
         `i_ret`.getDefinition(LuajitToContext(getstruct:"retstruct")),
         `i_retstore`.addr,
         `custom`
-      ).call(rawEnv holder.val,LuaReference)
+      ).call((holder.val.rawEnv,holder.UnknownUserdata),LuaReference)
   #echo "RESULT ",result.repr
 macro emulateFFIClosure(lua:LuaState,closure:untyped):LuaReference =
   let (checktypes,closure) = lua.prepareClosure closure
