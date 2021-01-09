@@ -7,6 +7,9 @@ import nimluaint/lua_defines
 import macros
 import strformat
 
+var logger = newConsoleLogger(fmtStr="[$time] - $levelname: ")
+addHandler logger
+
 test "luajit_1":
   let lua = newLuaState()
   let tref = block:# expandMacros:
@@ -126,3 +129,12 @@ test "luajit_tuplereturn":
     proc test(a:int):(int,string) =
       return (a+2,"TESTSTRING")
   check t1.call(5,(int,string))==(7,"TESTSTRING")
+
+test "luajit_registermethods":
+  let lua = newLuaState()
+  let t = lua.newtable()
+  t.registerJITMethods:
+    proc test1():int = return 100500
+    proc test2():string = return "teststring"
+  check t.rawget("test1",LuaReference).call((),int)==100500
+  check t.rawget("test2",LuaReference).call((),string)=="teststring"

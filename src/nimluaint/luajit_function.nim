@@ -37,8 +37,9 @@ proc bindLuajitFunction*(lua:LuaState,rawptr:pointer,rawname:string,args:openarr
   if datatable==nil:
     datatable = lua.newtable()
   datatable.rawset("retstore",retStore)
-  let cargs = args.mapIt(&"{it.typename} {it.name}").join(", ")
+  let cargs = args.mapIt(&"{it.typename} {it.name}").concat(@["void * envptr"]).join(", ")
   let luaargs = args.mapIt(it.name).join(", ")
+  let luacallargs = args.mapIt(it.name).concat(@["__internal_envptr"]).join(", ")
   let transforms = args.mapIt(&"--PROCESSING {it.name}\n{it.code}").join("\n")
   var load_metatables_seq:seq[string]
   for arg in args:
@@ -64,21 +65,21 @@ local ffi = require("ffi")
 --FINISHED CUSTOM DEFINITIONS
 ffi.cdef[[
 typedef struct {structbody} {rawname}_lasterror;
-bool {rawname}({cargs},void * envptr);
+bool {rawname}({cargs});
 ]]
 local last_error = ffi.new("{rawname}_lasterror*",data.lastErrorPtr)
 local retptr = data.retstore
 --STARTED RETURN STRUCT
 local retstruct = ffi.new([[{retDef.cdef} *]],retptr)
 --FINISHED RETURN STRUCT
-return function(envptr,keep)
+return function(__internal_envptr,keep)
 return function({luaargs})
 
   local data = data --protecting from gc (not sure if needed)
   local keep = keep
 {transforms}
 --CALLING FUNCTION
-  local callres = ffi.C.{rawname}({luaargs},envptr)
+  local callres = ffi.C.{rawname}({luacallargs})
   --print("CALLRES",callres)
   if not callres then
     local errmsg = ffi.string(last_error.cstr)
@@ -248,3 +249,22 @@ template implementFFIClosure*(lua:LuaState,closure:untyped):LuaReference =
   else:
     let l = lua
     emulateFFIClosure(l,closure)
+
+macro registerJITMethods*(r:LuaReference,methods:untyped) =
+  methods.expectKind nnkStmtList
+  let i_ref = ident "r"
+  let i_lua = ident "lua"
+  var res = newStmtList quote do:
+    let `i_ref` = `r`
+    let `i_lua` = `i_ref`.lua
+  for m in methods:
+    m.expectKind nnkProcDef
+    let name = m.name.strVal
+    res.add quote do:
+      block:
+        let clos = `i_lua`.implementFFIClosure `m`
+        `i_ref`.rawset(`name`,clos)
+  result = quote do:
+    block:
+      `res`
+  

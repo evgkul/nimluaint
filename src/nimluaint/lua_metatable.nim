@@ -23,3 +23,6 @@ proc setIndex*[T](meta:LuaMetatable,key:string,value:T) =
 
 template registerMethods*(meta:LuaMetatable,methods:untyped) =
   meta.getOrNewTable("__index").registerMethods methods
+
+template registerJITMethods*(meta:LuaMetatable,methods:untyped) =
+  meta.getOrNewTable("__index").registerJITMethods methods
