@@ -14,6 +14,7 @@ import luajit_from
 import luajit_to
 import lua_defines
 import lua_closure
+import tables
 type LuaLastError = object
   cstr: cstring
   nimstr: ref string
@@ -125,7 +126,7 @@ proc prepareClosure*(lua:NimNode,closure:NimNode):tuple[checktypes,closure:NimNo
       `body`
   return (checktypes,closure)
   
-template getOrCreateWrapper*(lua:LuaState,funptr:pointer,code:LuaReference):LuaReference =
+template getOrCreateLuajitWrapper*(lua:LuaState,funptr:pointer,code:LuaReference):LuaReference =
   if lua.luajit_cache.closure_wrappers.contains funptr:
     let rawref = lua.luajit_cache.closure_wrappers[funptr]
     newLuaReference(lua,rawref,LFUNCTION)
@@ -133,6 +134,7 @@ template getOrCreateWrapper*(lua:LuaState,funptr:pointer,code:LuaReference):LuaR
     let r = code
     let rawref = r.toraw
     lua.luajit_cache.closure_wrappers[funptr] = rawref
+    r
 
 macro implementFFIClosure*(lua:LuaState,closure:untyped,custom:LuajitFunctionCustom):LuaReference =
   when UseLuaVersion!="luajit":
@@ -219,14 +221,17 @@ macro implementFFIClosure*(lua:LuaState,closure:untyped,custom:LuajitFunctionCus
       luajit_store_init `i_retstore`
       `p`
       let holder = LuajitProcHolder[typeof `i_rawpname`](val: `i_rawpname`)
-      `i_lua`.bindLuajitFunction(
-        rawProc holder.val,
-        `rawpname`,
-        `argdefs`,
-        `i_ret`.getDefinition(LuajitToContext(getstruct:"retstruct")),
-        `i_retstore`.addr,
-        `custom`
-      ).call((holder.val.rawEnv,holder.UnknownUserdata),LuaReference)
+      let procptr = holder.val.rawProc
+      let factory = `i_lua`.getOrCreateLuajitWrapper(procptr):
+        `i_lua`.bindLuajitFunction(
+          procptr,
+          `rawpname`,
+          `argdefs`,
+          `i_ret`.getDefinition(LuajitToContext(getstruct:"retstruct")),
+          `i_retstore`.addr,
+          `custom`
+        )
+      factory.call((holder.val.rawEnv,holder.UnknownUserdata),LuaReference)
   #echo "RESULT ",result.repr
 macro emulateFFIClosure(lua:LuaState,closure:untyped):LuaReference =
   let (checktypes,closure) = lua.prepareClosure closure
